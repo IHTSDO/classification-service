@@ -1,0 +1,5 @@
+.*
+target
+*.iml
+src/main/java/org/snomed/otf/reasoner/server/original
+release
