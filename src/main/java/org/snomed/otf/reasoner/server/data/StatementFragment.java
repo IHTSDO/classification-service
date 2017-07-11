@@ -2,14 +2,32 @@ package org.snomed.otf.reasoner.server.data;
 
 public class StatementFragment {
 
+	private final long statementId;
 	private final long typeId;
 	private final long destinationId;
 	private final int group;
+	private final int unionGroup;
+	private final boolean universal;
+	private final boolean destinationNegated;
 
-	public StatementFragment(long typeId, long destinationId, int group) {
+	public StatementFragment(long statementId,
+							 long typeId,
+							 long destinationId,
+							 boolean destinationNegated,
+							 int group,
+							 int unionGroup,
+							 boolean universal) {
+		this.statementId = statementId;
 		this.typeId = typeId;
 		this.destinationId = destinationId;
+		this.destinationNegated = destinationNegated;
 		this.group = group;
+		this.unionGroup = unionGroup;
+		this.universal = universal;
+	}
+
+	public long getStatementId() {
+		return statementId;
 	}
 
 	public long getTypeId() {
@@ -23,4 +41,17 @@ public class StatementFragment {
 	public int getGroup() {
 		return group;
 	}
+
+	public int getUnionGroup() {
+		return unionGroup;
+	}
+
+	public boolean isUniversal() {
+		return universal;
+	}
+
+	public boolean isDestinationNegated() {
+		return destinationNegated;
+	}
+
 }

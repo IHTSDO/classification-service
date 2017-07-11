@@ -23,9 +23,9 @@
             <version>1.4.3.RELEASE</version>
         </dependency>
         <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
+            <groupId>org.snomed.otf</groupId>
             <artifactId>snomed-boot</artifactId>
-            <version>1.0.5-SNAPSHOT</version>
+            <version>1.4.0</version>
         </dependency>
         <dependency>
             <groupId>edu.stanford.protege</groupId>
@@ -36,6 +36,11 @@
             <groupId>edu.stanford.protege</groupId>
             <artifactId>protege-editor-owl</artifactId>
             <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.semanticweb.elk</groupId>
+            <artifactId>elk-protege</artifactId>
+            <version>0.4.2</version>
         </dependency>
     </dependencies>
 
