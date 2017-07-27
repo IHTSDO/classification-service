@@ -5,6 +5,8 @@ import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.reasoner.server.classification.ReasonerTaxonomy;
+import org.snomed.otf.reasoner.server.classification.ReasonerTaxonomyWalker;
 import org.snomed.otf.reasoner.server.ontology.DelegateOntology;
 import org.snomed.otf.reasoner.server.ontology.OntologyService;
 import org.snomed.otf.reasoner.server.taxonomy.ReasonerTaxonomyBuilder;
@@ -35,7 +37,12 @@ public class SnomedReasonerService {
 		reasoner.flush();
 		reasoner.precomputeInferences(InferenceType.CLASS_HIERARCHY);
 		logger.info("Inference complete");
-		logger.info("Total {} seconds", (new Date().getTime() - start)/1000f);
+		logger.info("{} seconds so far", (new Date().getTime() - start)/1000f);
+
+		// Extract Taxonomy
+		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), delegateOntology.getPrefixManager());
+		walker.walk();
+		logger.info("{} seconds total", (new Date().getTime() - start)/1000f);
 	}
 
 	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceRuntimeException {

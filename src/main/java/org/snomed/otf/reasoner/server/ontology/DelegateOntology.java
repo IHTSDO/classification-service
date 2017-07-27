@@ -1125,4 +1125,8 @@ public class DelegateOntology extends OWLObjectImpl implements OWLMutableOntolog
 	public void setTaxonomy(Taxonomy taxonomy) {
 		this.taxonomy = taxonomy;
 	}
+
+	public DefaultPrefixManager getPrefixManager() {
+		return prefixManager;
+	}
 }
