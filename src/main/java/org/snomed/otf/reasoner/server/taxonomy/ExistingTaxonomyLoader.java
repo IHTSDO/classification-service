@@ -8,25 +8,25 @@ import static java.lang.Long.parseLong;
 import static org.snomed.otf.reasoner.server.constants.Concepts.STATED_RELATIONSHIP;
 import static org.snomed.otf.reasoner.server.constants.Concepts.UNIVERSAL_RESTRICTION_MODIFIER;
 
-public class TaxonomyLoader extends ImpotentComponentFactory {
+public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
-	private Taxonomy taxonomy = new Taxonomy();
+	private ExistingTaxonomy existingTaxonomy = new ExistingTaxonomy();
 	private static final String ACTIVE = "1";
 
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
-			taxonomy.getAllConceptIds().add(id);
+			existingTaxonomy.getAllConceptIds().add(id);
 			if (Concepts.FULLY_DEFINED.equals(definitionStatusId)) {
-				taxonomy.getFullyDefinedConceptIds().add(id);
+				existingTaxonomy.getFullyDefinedConceptIds().add(id);
 			}
 		}
 	}
 
 	@Override
 	public void newRelationshipState(String id, String effectiveTime, String active, String moduleId, String sourceId, String destinationId, String relationshipGroup, String typeId, String characteristicTypeId, String modifierId) {
-		if (ACTIVE.equals(active) && STATED_RELATIONSHIP.equals(characteristicTypeId)) {
+		if (ACTIVE.equals(active)) {
 
 			boolean universal = UNIVERSAL_RESTRICTION_MODIFIER.equals(modifierId);
 			int unionGroup = 0;
@@ -41,7 +41,10 @@ public class TaxonomyLoader extends ImpotentComponentFactory {
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
 
-			taxonomy.addStatementFragment(
+			boolean stated = STATED_RELATIONSHIP.equals(characteristicTypeId);
+
+			existingTaxonomy.addStatementFragment(
+					stated,
 					parseLong(sourceId),
 					new StatementFragment(
 							parseLong(id),
@@ -55,8 +58,8 @@ public class TaxonomyLoader extends ImpotentComponentFactory {
 		}
 	}
 
-	public Taxonomy getTaxonomy() {
-		return taxonomy;
+	public ExistingTaxonomy getExistingTaxonomy() {
+		return existingTaxonomy;
 	}
 
 }

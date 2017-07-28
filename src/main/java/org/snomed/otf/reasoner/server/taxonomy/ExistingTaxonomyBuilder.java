@@ -7,23 +7,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StopWatch;
 
-public class ReasonerTaxonomyBuilder {
+public class ExistingTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Taxonomy build(String releaseDirectoryPath) throws ReleaseImportException {
+	public ExistingTaxonomy build(String releaseDirectoryPath) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		TaxonomyLoader taxonomyLoader = new TaxonomyLoader();
+		ExistingTaxonomyLoader existingTaxonomyLoader = new ExistingTaxonomyLoader();
 		new ReleaseImporter().loadSnapshotReleaseFiles(
 				releaseDirectoryPath,
 				new LoadingProfile().withStatedRelationships().withFullRelationshipObjects(),
-				taxonomyLoader);
+				existingTaxonomyLoader);
 
 		stopWatch.stop();
-		logger.info("Taxonomy loaded in {} seconds", stopWatch.getTotalTimeSeconds());
-		Taxonomy taxonomy = taxonomyLoader.getTaxonomy();
-		logger.info("{} concepts loaded", taxonomy.getAllConceptIds().size());
-		return taxonomy;
+		logger.info("ExistingTaxonomy loaded in {} seconds", stopWatch.getTotalTimeSeconds());
+		ExistingTaxonomy existingTaxonomy = existingTaxonomyLoader.getExistingTaxonomy();
+		logger.info("{} concepts loaded", existingTaxonomy.getAllConceptIds().size());
+		return existingTaxonomy;
 	}
 }

@@ -10,6 +10,10 @@ public class StatementFragment {
 	private final boolean universal;
 	private final boolean destinationNegated;
 
+	public StatementFragment(final long typeId, final long destinationId) {
+		this(-1, typeId, destinationId, false, 0, 0, false);
+	}
+
 	public StatementFragment(long statementId,
 							 long typeId,
 							 long destinationId,

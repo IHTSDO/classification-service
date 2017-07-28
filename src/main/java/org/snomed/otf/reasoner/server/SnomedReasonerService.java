@@ -7,10 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.classification.ReasonerTaxonomyWalker;
+import org.snomed.otf.reasoner.server.normalform.RelationshipChangeCollector;
+import org.snomed.otf.reasoner.server.normalform.RelationshipNormalFormGenerator;
 import org.snomed.otf.reasoner.server.ontology.DelegateOntology;
 import org.snomed.otf.reasoner.server.ontology.OntologyService;
-import org.snomed.otf.reasoner.server.taxonomy.ReasonerTaxonomyBuilder;
-import org.snomed.otf.reasoner.server.taxonomy.Taxonomy;
+import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomy;
+import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomyBuilder;
 
 import java.util.Date;
 
@@ -20,13 +22,13 @@ public class SnomedReasonerService {
 
 	public void classify(String releaseDirectoryPath, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
 		long start = new Date().getTime();
-		logger.info("Building taxonomy");
-		ReasonerTaxonomyBuilder reasonerTaxonomyBuilder = new ReasonerTaxonomyBuilder();
-		Taxonomy taxonomy = reasonerTaxonomyBuilder.build(releaseDirectoryPath);
+		logger.info("Building existingTaxonomy");
+		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
+		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(releaseDirectoryPath);
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();
-		delegateOntology.setTaxonomy(taxonomy);
+		delegateOntology.setExistingTaxonomy(existingTaxonomy);
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
@@ -39,9 +41,17 @@ public class SnomedReasonerService {
 		logger.info("Inference complete");
 		logger.info("{} seconds so far", (new Date().getTime() - start)/1000f);
 
-		// Extract Taxonomy
+		logger.info("Extract ReasonerTaxonomy");
 		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), delegateOntology.getPrefixManager());
-		walker.walk();
+		ReasonerTaxonomy reasonerTaxonomy = walker.walk();
+
+		logger.info("Generate normal form");
+		RelationshipNormalFormGenerator normalFormGenerator = new RelationshipNormalFormGenerator(reasonerTaxonomy, existingTaxonomy);
+		RelationshipChangeCollector changeCollector = new RelationshipChangeCollector();
+		normalFormGenerator.collectNormalFormChanges(changeCollector);
+
+		logger.info("{} relationships added, {} removed", changeCollector.getAddedCount(), changeCollector.getRemovedCount());
+
 		logger.info("{} seconds total", (new Date().getTime() - start)/1000f);
 	}
 

@@ -18,6 +18,7 @@ package org.snomed.otf.reasoner.server.classification;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import org.snomed.otf.reasoner.server.data.StatementFragment;
 
 import java.io.Serializable;
 import java.util.*;
@@ -88,5 +89,9 @@ public class ReasonerTaxonomy implements Serializable {
 	
 	public List<Long> getConceptIds() {
 		return insertionOrderedIds;
+	}
+
+	public Collection<StatementFragment> getNonIsAFragments(long conceptId) {
+		return null;
 	}
 }

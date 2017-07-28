@@ -26,6 +26,12 @@
             <groupId>org.snomed.otf</groupId>
             <artifactId>snomed-boot</artifactId>
             <version>1.4.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.collections</groupId>
+                    <artifactId>google-collections</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>edu.stanford.protege</groupId>
@@ -41,6 +47,11 @@
             <groupId>org.semanticweb.elk</groupId>
             <artifactId>elk-protege</artifactId>
             <version>0.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>21.0</version>
         </dependency>
     </dependencies>
 

@@ -24,7 +24,7 @@ import org.snomed.otf.reasoner.server.constants.Concepts;
 import org.snomed.otf.reasoner.server.data.ConcreteDomainFragment;
 import org.snomed.otf.reasoner.server.data.StatementFragment;
 import org.snomed.otf.reasoner.server.model.*;
-import org.snomed.otf.reasoner.server.taxonomy.Taxonomy;
+import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomy;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectImpl;
 
 import java.util.*;
@@ -35,7 +35,7 @@ import static org.snomed.otf.reasoner.server.model.SnomedOntologyUtils.PREFIX_RO
 
 public class DelegateOntology extends OWLObjectImpl implements OWLMutableOntology {
 
-	private Taxonomy taxonomy;
+	private ExistingTaxonomy existingTaxonomy;
 	private final OWLOntologyManager manager;
 	private final OWLOntologyID ontologyID;
 	private final DefaultPrefixManager prefixManager;
@@ -1113,8 +1113,8 @@ public class DelegateOntology extends OWLObjectImpl implements OWLMutableOntolog
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
-	private Taxonomy getReasonerTaxonomyBuilder() {
-		return taxonomy;
+	private ExistingTaxonomy getReasonerTaxonomyBuilder() {
+		return existingTaxonomy;
 	}
 
 	public void dispose() {
@@ -1122,8 +1122,8 @@ public class DelegateOntology extends OWLObjectImpl implements OWLMutableOntolog
 		manager.removeOntology(this);
 	}
 
-	public void setTaxonomy(Taxonomy taxonomy) {
-		this.taxonomy = taxonomy;
+	public void setExistingTaxonomy(ExistingTaxonomy existingTaxonomy) {
+		this.existingTaxonomy = existingTaxonomy;
 	}
 
 	public DefaultPrefixManager getPrefixManager() {

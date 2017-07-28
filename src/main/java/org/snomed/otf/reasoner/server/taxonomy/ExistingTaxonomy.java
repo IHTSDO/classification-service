@@ -9,11 +9,12 @@ import org.snomed.otf.reasoner.server.data.StatementFragment;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Taxonomy {
+public class ExistingTaxonomy {
 
 	private Set<Long> allConceptIds = new LongOpenHashSet();
 	private Set<Long> fullyDefinedConceptIds = new LongOpenHashSet();
 	private Map<Long, Set<StatementFragment>> statementFragmentMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, Set<StatementFragment>> inferredStatementMap = new Long2ObjectOpenHashMap<>();
 	private Map<Long, Set<Long>> subTypesMap = new Long2ObjectOpenHashMap<>();
 
 	public boolean isPrimitive(Long conceptId) {
@@ -34,10 +35,14 @@ public class Taxonomy {
 		return statementFragmentMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 
-	public void addStatementFragment(long conceptId, StatementFragment statementFragment) {
-		statementFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
-		if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
-			subTypesMap.computeIfAbsent(statementFragment.getDestinationId(), k -> new HashSet<>()).add(conceptId);
+	public void addStatementFragment(boolean stated, long conceptId, StatementFragment statementFragment) {
+		if (stated) {
+			statementFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
+			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
+				subTypesMap.computeIfAbsent(statementFragment.getDestinationId(), k -> new HashSet<>()).add(conceptId);
+			}
+		} else {
+			inferredStatementMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
 		}
 	}
 
@@ -84,8 +89,8 @@ public class Taxonomy {
 		return superTypes;
 	}
 
-	public Collection<Object> getNonIsAFragments(Long conceptid) {
-		return statementFragmentMap.get(conceptid).stream().filter(f -> f.getTypeId() != Concepts.IS_A_LONG).collect(Collectors.toList());
+	public Collection<StatementFragment> getNonIsAFragments(Long conceptId) {
+		return statementFragmentMap.getOrDefault(conceptId, Collections.emptySet()).stream().filter(f -> f.getTypeId() != Concepts.IS_A_LONG).collect(Collectors.toList());
 	}
 
 	public Set<Long> getSubTypeIds(long conceptId) {
@@ -107,5 +112,9 @@ public class Taxonomy {
 
 	public Set<Long> getConceptIdSet() {
 		return allConceptIds;
+	}
+
+	public Collection<StatementFragment> getInferredStatementFragments(long conceptId) {
+		return inferredStatementMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 }

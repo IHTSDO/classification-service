@@ -53,8 +53,8 @@ public class ReasonerTaxonomyWalker {
 		this.processedConceptIds = new LongOpenHashSet(600000);
 	}
 
-	public void walk() {
-		LOGGER.info(">>> Taxonomy extraction");
+	public ReasonerTaxonomy walk() {
+		LOGGER.info(">>> ExistingTaxonomy extraction");
 
 		final Deque<Node<OWLClass>> nodesToProcess = new LinkedList<>();
 		nodesToProcess.add(reasoner.getTopClassNode());
@@ -74,7 +74,8 @@ public class ReasonerTaxonomyWalker {
 		processedConceptIds.clear();
 		processedConceptIds = null;
 
-		LOGGER.info("<<< Taxonomy extraction");
+		LOGGER.info("<<< taxonomy extraction");
+		return taxonomy;
 	}
 
 	private NodeSet<OWLClass> walk(final Node<OWLClass> node) {
