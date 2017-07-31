@@ -13,9 +13,11 @@ import org.snomed.otf.reasoner.server.ontology.DelegateOntology;
 import org.snomed.otf.reasoner.server.ontology.OntologyService;
 import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomy;
 import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomyBuilder;
+import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
+@Service
 public class SnomedReasonerService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
