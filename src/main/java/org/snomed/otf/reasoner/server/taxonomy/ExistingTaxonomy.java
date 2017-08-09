@@ -94,7 +94,8 @@ public class ExistingTaxonomy {
 	}
 
 	public Set<Long> getSubTypeIds(long conceptId) {
-		return subTypesMap.get(conceptId);
+		Set<Long> longs = subTypesMap.get(conceptId);
+		return longs != null ? longs : Collections.emptySet();
 	}
 
 	public boolean isExhaustive(long conceptId) {
