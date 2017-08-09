@@ -9,10 +9,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import javax.annotation.PostConstruct;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 @SpringBootApplication
 public class Application {
@@ -26,19 +27,22 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 	}
 
-//	Uncomment for manual classification testing
-//	@PostConstruct
+	// Uncomment for manual classification testing
+	// @PostConstruct
 	private void testClassification() {
 		// Path to a SNOMED release on local disk
-		String releaseDirectoryPath = "release/SnomedCT_InternationalRF2_Production_20170131";
+		String snomedRf2SnapshotArchivePath = "release/SnomedCT_InternationalRF2_Production_20170131.zip";
 
 		// Name of Reasoner factory to use on classpath
 		String reasonerFactoryClassName = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
 
 		try {
-			snomedReasonerService.classify(releaseDirectoryPath, reasonerFactoryClassName);
+			InputStream resourceAsStream = new FileInputStream(snomedRf2SnapshotArchivePath);
+			snomedReasonerService.classify(resourceAsStream, reasonerFactoryClassName);
 		} catch (ReleaseImportException | OWLOntologyCreationException e) {
 			logger.error("Classification error", e);
+		} catch (FileNotFoundException e) {
+			logger.error("Could not open archive", e);
 		}
 	}
 

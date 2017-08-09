@@ -1,6 +1,9 @@
 package org.snomed.otf.reasoner.server;
 
+import org.coode.owlapi.functionalrenderer.OWLFunctionalSyntaxRenderer;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
+import org.semanticweb.owlapi.io.OWLRendererException;
+import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
 import org.slf4j.Logger;
@@ -15,6 +18,10 @@ import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomy;
 import org.snomed.otf.reasoner.server.taxonomy.ExistingTaxonomyBuilder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 
 @Service
@@ -22,11 +29,11 @@ public class SnomedReasonerService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public void classify(String releaseDirectoryPath, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
+	public void classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
 		long start = new Date().getTime();
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
-		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(releaseDirectoryPath);
+		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(snomedRf2SnapshotArchive);
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();

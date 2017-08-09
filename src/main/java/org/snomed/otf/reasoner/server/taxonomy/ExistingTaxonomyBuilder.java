@@ -7,16 +7,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StopWatch;
 
+import java.io.InputStream;
+
 public class ExistingTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ExistingTaxonomy build(String releaseDirectoryPath) throws ReleaseImportException {
+	public ExistingTaxonomy build(InputStream snomedRf2SnapshotArchive) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		ExistingTaxonomyLoader existingTaxonomyLoader = new ExistingTaxonomyLoader();
 		new ReleaseImporter().loadSnapshotReleaseFiles(
-				releaseDirectoryPath,
+				snomedRf2SnapshotArchive,
 				new LoadingProfile().withStatedRelationships().withFullRelationshipObjects(),
 				existingTaxonomyLoader);
 
