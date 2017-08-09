@@ -39,6 +39,9 @@ public class SnomedReasonerService {
 		DelegateOntology delegateOntology = new OntologyService().createOntology();
 		delegateOntology.setExistingTaxonomy(existingTaxonomy);
 
+		// Uncomment for debugging
+		// serialiseOntology(delegateOntology);
+
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
@@ -62,6 +65,21 @@ public class SnomedReasonerService {
 		logger.info("{} relationships added, {} removed", changeCollector.getAddedCount(), changeCollector.getRemovedCount());
 
 		logger.info("{} seconds total", (new Date().getTime() - start)/1000f);
+	}
+
+	private void serialiseOntology(OWLOntology ontology) {
+		OWLFunctionalSyntaxRenderer ontologyRenderer = new OWLFunctionalSyntaxRenderer();
+		try {
+			File classificationsDirectory = new File("testing/classifications");
+			classificationsDirectory.mkdirs();
+			File owlFile = new File(classificationsDirectory, new Date().getTime() + ".owl");
+			logger.info("Serialising OWL Ontology before classification to file {}", owlFile.getAbsolutePath());
+			try (FileWriter fileWriter = new FileWriter(owlFile)) {
+				ontologyRenderer.render(ontology, fileWriter);
+			}
+		} catch (OWLRendererException | IOException e) {
+			logger.error("Failed to serialise OWL Ontology.", e);
+		}
 	}
 
 	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceRuntimeException {
