@@ -36,6 +36,17 @@ public class SnomedReasonerService {
 		this.resultsService = resultsService;
 	}
 
+	public void queueClassification(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) {
+		// Write archive and config to persistent storage
+		// Map of jobs
+		// Queue
+		// Poll queue for jobs
+		// Update job status when start
+		// Classify
+		// Write results to persistent storage
+		// Update job status
+	}
+
 	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
 		Date startDate = new Date();
 		logger.info("Building existingTaxonomy");
