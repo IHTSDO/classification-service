@@ -12,9 +12,7 @@ Use Maven to build the executable jar and run:
 mvn clean package
 java -Xmx3g -jar target/classification-service*.jar
 ```
-Access the service API documentation at http://localhost:8080/classification-service
-
-TODO: Add Swagger
+Access the service API documentation at [http://localhost:8089/classification-service](http://localhost:8089/classification-service)
 
 ## Configuration
 This is a Spring Boot application. Configuration options can be placed after the jar parameter on the command line or use an appliction.properties file to override [the defaults](blob/master/src/main/resources/application.properties). See [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) for more information.

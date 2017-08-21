@@ -20,7 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @RestController()
-@RequestMapping("/classifications")
+@RequestMapping(value = "/classifications", produces = "application/json")
 public class ClassificationController {
 
 	// TODO: Replace dummy implementation

@@ -11,6 +11,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -18,7 +22,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
+import static com.google.common.base.Predicates.not;
+import static springfox.documentation.builders.PathSelectors.regex;
+
 @SpringBootApplication
+@EnableSwagger2
 public class Application {
 
 	@Autowired
@@ -31,7 +39,7 @@ public class Application {
 	}
 
 	// Uncomment for manual classification testing
-	@PostConstruct
+//	@PostConstruct
 	private void testClassification() {
 		// Path to a SNOMED release on local disk
 		String snomedRf2SnapshotArchivePath = "testing/SnomedCT_Release_INT.zip";
@@ -54,6 +62,15 @@ public class Application {
 	@Bean
 	public TaskScheduler taskScheduler() {
 		return new ThreadPoolTaskScheduler();
+	}
+
+	@Bean
+	public Docket api() {
+		return new Docket(DocumentationType.SWAGGER_2)
+				.select()
+				.apis(RequestHandlerSelectors.any())
+				.paths(not(regex("/error")))
+				.build();
 	}
 
 }
