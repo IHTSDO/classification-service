@@ -4,3 +4,4 @@ target
 release
 testing
 classification-results
+application-local.properties
