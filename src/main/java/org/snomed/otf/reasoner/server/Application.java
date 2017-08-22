@@ -4,6 +4,7 @@ import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.SnomedReasonerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -34,6 +35,8 @@ public class Application {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	public static final String DEFAULT_REASONER_FACTORY = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
+
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
@@ -45,23 +48,17 @@ public class Application {
 		String snomedRf2SnapshotArchivePath = "testing/SnomedCT_Release_INT.zip";
 //		String snomedRf2SnapshotArchivePath = "release/SnomedCT_InternationalRF2_Production_20170131.zip";
 
-		// Name of Reasoner factory to use on classpath
-		String reasonerFactoryClassName = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
-
 		try {
 			InputStream resourceAsStream = new FileInputStream(snomedRf2SnapshotArchivePath);
-			File results = snomedReasonerService.classify(resourceAsStream, reasonerFactoryClassName);
+			File results = snomedReasonerService.classify(resourceAsStream, DEFAULT_REASONER_FACTORY);
 			logger.info("Results file path {}", results.getAbsolutePath());
 		} catch (ReleaseImportException | OWLOntologyCreationException e) {
 			logger.error("Classification error", e);
 		} catch (FileNotFoundException e) {
 			logger.error("Could not open archive", e);
+		} catch (ReasonerServiceException e) {
+			logger.error(e.getMessage(), e);
 		}
-	}
-
-	@Bean
-	public TaskScheduler taskScheduler() {
-		return new ThreadPoolTaskScheduler();
 	}
 
 	@Bean

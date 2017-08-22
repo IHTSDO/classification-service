@@ -21,7 +21,7 @@ class ClassificationResultsService {
 	private static final String EQUIVALENT_REFSET_HEADER = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tmapTarget";
 	private static final String TAB = "\t";
 
-	File createResultsRf2Archive(RelationshipChangeCollector changeCollector, List<Set<Long>> equivalentConceptIdSets, Date startDate) {
+	File createResultsRf2Archive(RelationshipChangeCollector changeCollector, List<Set<Long>> equivalentConceptIdSets, Date startDate) throws ReasonerServiceException {
 		File resultsDirectory = getOutputDirectoryFile();
 		File outputFile = new File(resultsDirectory, "classification-results-rf2-" + new Date().getTime() + ".zip");
 		try {
@@ -36,7 +36,7 @@ class ClassificationResultsService {
 				writeEquivalentConcepts(writer, equivalentConceptIdSets);
 			}
 		} catch (IOException e) {
-			throw new ReasonerServiceRuntimeException("Failed to write out results archive.", e);
+			throw new ReasonerServiceException("Failed to write out results archive.", e);
 		}
 		return outputFile;
 	}
@@ -163,11 +163,11 @@ class ClassificationResultsService {
 		writer.newLine();
 	}
 
-	private File getOutputDirectoryFile() {
+	private File getOutputDirectoryFile() throws ReasonerServiceException {
 		File resultsDirectory = new File("classification-results");
 		if (!resultsDirectory.isDirectory()) {
 			if (!resultsDirectory.mkdirs()) {
-				throw new ReasonerServiceRuntimeException("Failed to create results directory.");
+				throw new ReasonerServiceException("Failed to create results directory.");
 			}
 		}
 		return resultsDirectory;

@@ -8,46 +8,107 @@ import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.reasoner.server.pojo.Classification;
+import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomyWalker;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeCollector;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
 import org.snomed.otf.reasoner.server.service.ontology.DelegateOntology;
 import org.snomed.otf.reasoner.server.service.ontology.OntologyService;
+import org.snomed.otf.reasoner.server.service.store.FileStoreService;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Date;
+import javax.annotation.PostConstruct;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SnomedReasonerService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private ClassificationResultsService resultsService;
+	private final FileStoreService fileStoreService;
 
-	public SnomedReasonerService(@Autowired ClassificationResultsService resultsService) {
+	private final LinkedBlockingQueue<Classification> classificationQueue;
+
+	private final Map<String, Classification> classificationMap;
+
+	private final ClassificationResultsService resultsService;
+
+	public SnomedReasonerService(@Autowired FileStoreService fileStoreService, @Autowired ClassificationResultsService resultsService) {
+		this.fileStoreService = fileStoreService;
 		this.resultsService = resultsService;
+		classificationQueue = new LinkedBlockingQueue<>();
+		classificationMap = new HashMap<>();
 	}
 
-	public void queueClassification(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) {
-		// Write archive and config to persistent storage
-		// Map of jobs
-		// Queue
-		// Poll queue for jobs
-		// Update job status when start
-		// Classify
-		// Write results to persistent storage
-		// Update job status
+	@PostConstruct
+	public void init() {
+		new Thread(() -> {
+			try {
+				Classification classification;
+				while (true) {
+					if ((classification = classificationQueue.poll(1, TimeUnit.SECONDS)) != null) {
+						Thread.sleep(10 * 1000);
+						classify(classification);
+					}
+				}
+			} catch (InterruptedException e) {
+				// Nothing wrong
+			}
+			logger.info("Shutting down.");
+		}, "job-polling-thread").start();
 	}
 
-	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
+	public Classification queueClassification(InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
+		// Create classification configuration
+		Classification classification = new Classification(branch, reasonerId);
+
+		// Persist input archive
+		try {
+			fileStoreService.saveSnapshotInput(classification, snomedRf2SnapshotArchive);
+		} catch (IOException e) {
+			throw new IOException("Failed to persist input archive.", e);
+		}
+
+		// Add to queue
+		classificationMap.put(classification.getClassificationId(), classification);
+		classificationQueue.add(classification);
+
+		return classification;
+	}
+
+	private void classify(Classification classification) {
+		classification.setStatus(ClassificationStatus.RUNNING);
+		try (FileInputStream snomedRf2SnapshotArchive = fileStoreService.loadSnapshotInput(classification)) {
+			File resultsArchive = classify(snomedRf2SnapshotArchive, classification.getReasonerId());
+			fileStoreService.saveResults(classification, resultsArchive);
+			classification.setStatus(ClassificationStatus.COMPLETED);
+		} catch (ReasonerServiceException e) {
+			classificationFailed(classification, e, e.getMessage());
+		} catch (OWLOntologyCreationException e) {
+			classificationFailed(classification, e, "Failed to create OWL Ontology.");
+		} catch (ReleaseImportException e) {
+			classificationFailed(classification, e, "Failed to import RF2 data.");
+		} catch (IOException e) {
+			classificationFailed(classification, e, "Failed to load input archive.");
+		}
+	}
+
+	private void classificationFailed(Classification classification, Exception e, String message) {
+		logger.error(message, e);
+		classification.setStatus(ClassificationStatus.FAILED);
+		classification.setErrorMessage(message);
+		classification.setDeveloperMessage(e.getMessage());
+	}
+
+	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
 		logger.info("Checking requested reasoner is available");
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
@@ -92,22 +153,22 @@ public class SnomedReasonerService {
 		return resultsRf2Archive;
 	}
 
-	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceRuntimeException {
+	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceException {
 		Class<?> reasonerFactoryClass = null;
 		try {
 			reasonerFactoryClass = Class.forName(reasonerFactoryClassName);
 			return (OWLReasonerFactory) reasonerFactoryClass.newInstance();
 		} catch (ClassNotFoundException e) {
-			throw new ReasonerServiceRuntimeException(String.format("Requested reasoner class '%s' not found.", reasonerFactoryClassName), e);
+			throw new ReasonerServiceException(String.format("Requested reasoner class '%s' not found.", reasonerFactoryClassName), e);
 		} catch (InstantiationException | IllegalAccessException e) {
-			throw new ReasonerServiceRuntimeException(String.format("An instance of requested reasoner '%s' could not be created.", reasonerFactoryClass), e);
+			throw new ReasonerServiceException(String.format("An instance of requested reasoner '%s' could not be created.", reasonerFactoryClass), e);
 		}
 	}
 
 	private void serialiseOntologyForDebug(OWLOntology ontology) {
 		OWLFunctionalSyntaxRenderer ontologyRenderer = new OWLFunctionalSyntaxRenderer();
 		try {
-			File classificationsDirectory = new File("debug/classifications");
+			File classificationsDirectory = new File("debug/classificationMap");
 			classificationsDirectory.mkdirs();
 			File owlFile = new File(classificationsDirectory, new Date().getTime() + ".owl");
 			logger.info("Serialising OWL Ontology before classification to file {}", owlFile.getAbsolutePath());
@@ -119,4 +180,11 @@ public class SnomedReasonerService {
 		}
 	}
 
+	public Classification getClassification(String classificationId) {
+		return classificationMap.get(classificationId);
+	}
+
+	public InputStream getClassificationResults(Classification classification) throws FileNotFoundException {
+		return fileStoreService.loadResults(classification);
+	}
 }
