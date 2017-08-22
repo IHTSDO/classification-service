@@ -55,7 +55,6 @@ public class SnomedReasonerService {
 				Classification classification;
 				while (true) {
 					if ((classification = classificationQueue.poll(1, TimeUnit.SECONDS)) != null) {
-						Thread.sleep(10 * 1000);
 						classify(classification);
 					}
 				}
