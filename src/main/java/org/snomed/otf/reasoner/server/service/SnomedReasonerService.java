@@ -49,6 +49,9 @@ public class SnomedReasonerService {
 
 	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException {
 		Date startDate = new Date();
+		logger.info("Checking requested reasoner is available");
+		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
+
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
 		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(snomedRf2SnapshotArchive);
@@ -62,7 +65,6 @@ public class SnomedReasonerService {
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
-		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 		OWLReasoner reasoner = reasonerFactory.createReasoner(delegateOntology, configuration);
 
 		logger.info("OwlReasoner inferring class hierarchy");
