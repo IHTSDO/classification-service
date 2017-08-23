@@ -17,13 +17,13 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
 
-		// Delta could change the definition status!!
-
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
 			existingTaxonomy.getAllConceptIds().add(id);
 			if (Concepts.FULLY_DEFINED.equals(definitionStatusId)) {
 				existingTaxonomy.getFullyDefinedConceptIds().add(id);
+			} else {
+				existingTaxonomy.getFullyDefinedConceptIds().remove(id);
 			}
 		} else if (loadingDelta) {
 			// Inactive concepts in the delta should be removed from the snapshot view

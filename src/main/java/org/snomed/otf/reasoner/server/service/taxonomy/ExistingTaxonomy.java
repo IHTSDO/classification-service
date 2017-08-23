@@ -3,7 +3,6 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
-import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.ConcreteDomainFragment;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;

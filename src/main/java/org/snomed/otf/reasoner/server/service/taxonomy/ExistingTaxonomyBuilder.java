@@ -12,10 +12,14 @@ import java.io.InputStream;
 public class ExistingTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	private static final LoadingProfile LOADING_PROFILE = new LoadingProfile()
+	
+	private static final LoadingProfile SNAPSHOT_LOADING_PROFILE = new LoadingProfile()
 			.withStatedRelationships()
 			.withFullRelationshipObjects()
-			.withoutFullDescriptionObjects();
+			.withoutDescriptions();
+	
+	private static final LoadingProfile DELTA_LOADING_PROFILE = SNAPSHOT_LOADING_PROFILE
+			.withInactiveConcepts();  //The delta needs to be able to inactivate previously active concepts
 
 	public ExistingTaxonomy build(InputStream snomedRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
@@ -26,7 +30,7 @@ public class ExistingTaxonomyBuilder {
 		ReleaseImporter releaseImporter = new ReleaseImporter();
 		releaseImporter.loadSnapshotReleaseFiles(
 				snomedRf2SnapshotArchive,
-				LOADING_PROFILE,
+				SNAPSHOT_LOADING_PROFILE,
 				existingTaxonomyLoader);
 		logger.info("Loaded previous release snapshot");
 
@@ -34,7 +38,7 @@ public class ExistingTaxonomyBuilder {
 
 		releaseImporter.loadDeltaReleaseFiles(
 				currentReleaseRf2DeltaArchive,
-				LOADING_PROFILE,
+				DELTA_LOADING_PROFILE,
 				existingTaxonomyLoader);
 		logger.info("Loaded current release delta");
 
