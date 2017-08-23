@@ -150,6 +150,7 @@ public class SnomedReasonerService {
 		logger.info("Writing results archive");
 		File resultsRf2Archive = resultsService.createResultsRf2Archive(changeCollector, reasonerTaxonomy.getEquivalentConceptIds(), startDate);
 
+		logger.info("Archive written to: {}", resultsRf2Archive.getAbsolutePath());
 		logger.info("{} seconds total", (new Date().getTime() - startDate.getTime())/1000f);
 
 		return resultsRf2Archive;
