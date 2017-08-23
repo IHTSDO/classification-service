@@ -65,13 +65,13 @@ public class SnomedReasonerService {
 		}, "job-polling-thread").start();
 	}
 
-	public Classification queueClassification(InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
+	public Classification queueClassification(String previousRelease, InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
-		Classification classification = new Classification(branch, reasonerId);
+		Classification classification = new Classification(previousRelease, branch, reasonerId);
 
 		// Persist input archive
 		try {
-			fileStoreService.saveSnapshotInput(classification, snomedRf2SnapshotArchive);
+			fileStoreService.saveDeltaInput(classification, snomedRf2SnapshotArchive);
 		} catch (IOException e) {
 			throw new IOException("Failed to persist input archive.", e);
 		}
@@ -85,8 +85,11 @@ public class SnomedReasonerService {
 
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
-		try (FileInputStream snomedRf2SnapshotArchive = fileStoreService.loadSnapshotInput(classification)) {
-			File resultsArchive = classify(snomedRf2SnapshotArchive, classification.getReasonerId());
+		try (InputStream previousReleaseRf2SnapshotArchive = fileStoreService.loadPreviousRelease(classification.getPreviousRelease());
+			 InputStream currentReleaseRf2DeltaArchive = fileStoreService.loadDeltaInput(classification)) {
+
+			File resultsArchive = classify(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive, classification.getReasonerId());
+
 			fileStoreService.saveResults(classification, resultsArchive);
 			classification.setStatus(ClassificationStatus.COMPLETED);
 		} catch (ReasonerServiceException e) {
@@ -94,9 +97,9 @@ public class SnomedReasonerService {
 		} catch (OWLOntologyCreationException e) {
 			classificationFailed(classification, e, "Failed to create OWL Ontology.");
 		} catch (ReleaseImportException e) {
-			classificationFailed(classification, e, "Failed to import RF2 data.");
+			classificationFailed(classification, e, "Failed to import RF2 content.");
 		} catch (IOException e) {
-			classificationFailed(classification, e, "Failed to load input archive.");
+			classificationFailed(classification, e, "Failed to load RF2 files.");
 		}
 	}
 
@@ -107,14 +110,14 @@ public class SnomedReasonerService {
 		classification.setDeveloperMessage(e.getMessage());
 	}
 
-	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
+	public File classify(InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
 		logger.info("Checking requested reasoner is available");
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
-		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(snomedRf2SnapshotArchive);
+		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();

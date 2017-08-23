@@ -45,12 +45,14 @@ public class Application {
 //	@PostConstruct
 	private void testClassification() {
 		// Path to a SNOMED release on local disk
-		String snomedRf2SnapshotArchivePath = "testing/SnomedCT_Release_INT.zip";
+		String snomedRf2SnapshotArchivePath = "store/releases/SnomedCT_InternationalRF2_Production_20170131T120000WithoutRT.zip";
+		String snomedRf2DeltaArchivePath = "release/xSnomedCT_InternationalRF2_BETA_20170731T120000Z.zip";
+//		String snomedRf2DeltaArchivePath = "testing/SnomedCT_Release_INT.zip";
 //		String snomedRf2SnapshotArchivePath = "release/SnomedCT_InternationalRF2_Production_20170131.zip";
-
 		try {
-			InputStream resourceAsStream = new FileInputStream(snomedRf2SnapshotArchivePath);
-			File results = snomedReasonerService.classify(resourceAsStream, DEFAULT_REASONER_FACTORY);
+			InputStream snomedRf2SnapshotArchive = new FileInputStream(snomedRf2SnapshotArchivePath);
+			InputStream snomedRf2DeltaArchive = new FileInputStream(snomedRf2DeltaArchivePath);
+			File results = snomedReasonerService.classify(snomedRf2SnapshotArchive, snomedRf2DeltaArchive, DEFAULT_REASONER_FACTORY);
 			logger.info("Results file path {}", results.getAbsolutePath());
 		} catch (ReleaseImportException | OWLOntologyCreationException e) {
 			logger.error("Classification error", e);

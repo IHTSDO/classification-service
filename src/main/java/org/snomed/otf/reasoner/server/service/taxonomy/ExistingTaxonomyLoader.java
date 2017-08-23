@@ -12,20 +12,32 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 	private ExistingTaxonomy existingTaxonomy = new ExistingTaxonomy();
 	private static final String ACTIVE = "1";
+	private boolean loadingDelta;
 
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
+
+		// Delta could change the definition status!!
+
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
 			existingTaxonomy.getAllConceptIds().add(id);
 			if (Concepts.FULLY_DEFINED.equals(definitionStatusId)) {
 				existingTaxonomy.getFullyDefinedConceptIds().add(id);
 			}
+		} else if (loadingDelta) {
+			// Inactive concepts in the delta should be removed from the snapshot view
+			long id = parseLong(conceptId);
+			existingTaxonomy.getAllConceptIds().remove(id);
+			existingTaxonomy.getFullyDefinedConceptIds().remove(id);
 		}
 	}
 
 	@Override
 	public void newRelationshipState(String id, String effectiveTime, String active, String moduleId, String sourceId, String destinationId, String relationshipGroup, String typeId, String characteristicTypeId, String modifierId) {
+
+		// Deal with mutable changes in the delta (groupId)
+
 		if (ACTIVE.equals(active)) {
 
 			boolean universal = UNIVERSAL_RESTRICTION_MODIFIER.equals(modifierId);
@@ -55,6 +67,10 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 							unionGroup,
 							universal)
 			);
+		} else if (loadingDelta) {
+			// Inactive relationships in the delta should be removed from the snapshot view
+			long fragmentId = parseLong(id);
+			existingTaxonomy.getStatementFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
 		}
 	}
 
@@ -62,4 +78,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 		return existingTaxonomy;
 	}
 
+	public void startLoadingDelta() {
+		loadingDelta = true;
+	}
 }

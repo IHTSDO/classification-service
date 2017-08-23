@@ -65,7 +65,7 @@ class ClassificationResultsService {
 		// Write redundant relationships
 		for (Long sourceId : removedStatements.keySet()) {
 			String active = "0";
-			for (StatementFragment statementFragment : addedStatements.get(sourceId)) {
+			for (StatementFragment statementFragment : removedStatements.get(sourceId)) {
 				writeRelationship(writer,
 						statementFragment.getStatementId() + "",
 						active,
