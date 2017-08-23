@@ -19,9 +19,13 @@ This is a Spring Boot application. Configuration options can be placed after the
 
 Example command line configuration, changing the port number:
 ```bash
-java -Xmx3g -jar target/classification-service*.jar --server.port=8081
+java -Xmx3g -jar target/classification-service*.jar --server.port=8081 --spring.config.location=src/main/resources/application.properties
 ```
- 
+Note: 
+
+
+* The latest release should be placed at testing/SnomedCT_Release_INT.zip
+
 
 ## Building for Debian/Ubuntu Linux
 The 'deb' maven profile will create a Debian package of this service: 
