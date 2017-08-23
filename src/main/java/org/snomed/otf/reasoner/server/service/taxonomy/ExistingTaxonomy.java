@@ -2,6 +2,8 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
+import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.ConcreteDomainFragment;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
@@ -60,16 +62,25 @@ public class ExistingTaxonomy {
 		}
 		return attributeIds;
 	}
-
+	
 	public boolean conceptHasAncestor(long conceptId, long ancestor) {
+		return conceptHasAncestor(conceptId, ancestor, 0);
+	}
+
+	public boolean conceptHasAncestor(long conceptId, long ancestor, long depth) {
 		if (conceptId == Concepts.ROOT_LONG) {
 			return false;
+		}
+		
+		//TODO Temporary code to find out why we're seeing a recursive hierarchy
+		if (depth > 50) {
+			throw new RuntimeException("Depth limit exceeded searching for potential ancestor " + ancestor + " of concept " + conceptId ); 
 		}
 
 		// Check all ancestors for the attribute concept
 		for (StatementFragment statementFragment : statementFragmentMap.get(conceptId)) {
 			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
-				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor);
+				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor, depth++);
 			}
 		}
 		return false;
