@@ -946,7 +946,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 						input.isDestinationNegated(),
 						groupNumber,
 						unionGroupNumber,
-						input.isUniversal()))
+						input.isUniversal(),
+						null))
 				.collect(Collectors.toSet());
 	}
 

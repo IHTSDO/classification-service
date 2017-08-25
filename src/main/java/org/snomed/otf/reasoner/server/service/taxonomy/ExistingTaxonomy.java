@@ -72,14 +72,14 @@ public class ExistingTaxonomy {
 		}
 		
 		//TODO Temporary code to find out why we're seeing a recursive hierarchy
-		if (depth > 50) {
+		if (depth > 30) {
 			throw new RuntimeException("Depth limit exceeded searching for potential ancestor " + ancestor + " of concept " + conceptId ); 
 		}
 
 		// Check all ancestors for the attribute concept
 		for (StatementFragment statementFragment : statementFragmentMap.get(conceptId)) {
 			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
-				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor, depth++);
+				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor, ++depth);
 			}
 		}
 		return false;

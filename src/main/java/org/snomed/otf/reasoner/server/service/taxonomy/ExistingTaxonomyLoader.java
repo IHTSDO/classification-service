@@ -3,6 +3,7 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 import org.ihtsdo.otf.snomedboot.factory.ImpotentComponentFactory;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
 import static java.lang.Long.parseLong;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.STATED_RELATIONSHIP;
@@ -65,7 +66,9 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 							destinationNegated,
 							Integer.parseInt(relationshipGroup),
 							unionGroup,
-							universal)
+							universal,
+							SnomedOntologyUtils.translateCharacteristicType(characteristicTypeId)
+							)
 			);
 		} else if (loadingDelta) {
 			// Inactive relationships in the delta should be removed from the snapshot view

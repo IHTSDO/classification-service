@@ -20,13 +20,15 @@ import java.util.Set;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
+import org.snomed.otf.reasoner.server.service.constants.Concepts;
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
 
 import com.google.common.collect.Iterables;
 
 /**
  * Utility class that holds OWL object identifier prefixes as well as methods for creating class expressions for object intersections and unions.
  */
-public abstract class SnomedOntologyUtils {
+public abstract class SnomedOntologyUtils implements SnomedConstants {
 
 	public static final String BASE_NAMESPACE = "http://snomed.org/";
 	public static final IRI BASE_IRI = IRI.create(BASE_NAMESPACE);
@@ -90,6 +92,15 @@ public abstract class SnomedOntologyUtils {
 		} else {
 			return Iterables.getOnlyElement(terms); // Also handles case when terms is empty
 		}
+	}
+	
+	public static CharacteristicType translateCharacteristicType (String charTypeSctId) {
+		switch (charTypeSctId) {
+			case Concepts.INFERRED_RELATIONSHIP : return CharacteristicType.INFERRED;
+			case Concepts.STATED_RELATIONSHIP : return CharacteristicType.STATED;
+			case Concepts.ADDITIONAL_RELATIONSHIP : return CharacteristicType.ADDITIONAL;
+		}
+		throw new IllegalArgumentException ( "Encountered unexpected characterstic type id " + charTypeSctId);
 	}
 
 	private SnomedOntologyUtils() {

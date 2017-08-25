@@ -1,6 +1,8 @@
 package org.snomed.otf.reasoner.server.service.data;
 
-public class StatementFragment {
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
+
+public class StatementFragment implements SnomedConstants {
 
 	private final long statementId;
 	private final long typeId;
@@ -9,9 +11,10 @@ public class StatementFragment {
 	private final int unionGroup;
 	private final boolean universal;
 	private final boolean destinationNegated;
+	private CharacteristicType characteristicType;
 
 	public StatementFragment(final long typeId, final long destinationId) {
-		this(-1, typeId, destinationId, false, 0, 0, false);
+		this(-1, typeId, destinationId, false, 0, 0, false, null);
 	}
 
 	public StatementFragment(long statementId,
@@ -20,7 +23,8 @@ public class StatementFragment {
 							 boolean destinationNegated,
 							 int group,
 							 int unionGroup,
-							 boolean universal) {
+							 boolean universal,
+							 CharacteristicType characteristicType) {
 		this.statementId = statementId;
 		this.typeId = typeId;
 		this.destinationId = destinationId;
@@ -28,6 +32,7 @@ public class StatementFragment {
 		this.group = group;
 		this.unionGroup = unionGroup;
 		this.universal = universal;
+		this.characteristicType = characteristicType;
 	}
 
 	public long getStatementId() {
@@ -56,6 +61,14 @@ public class StatementFragment {
 
 	public boolean isDestinationNegated() {
 		return destinationNegated;
+	}
+
+	public CharacteristicType getCharacteristicType() {
+		return characteristicType;
+	}
+
+	public void setCharacteristicType(CharacteristicType characteristicType) {
+		this.characteristicType = characteristicType;
 	}
 
 }
