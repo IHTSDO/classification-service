@@ -406,6 +406,10 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 			if (isUniversal() != other.isUniversal()) {
 				return false;
 			}
+			
+			if (this.getTypeId() == 116680003L && other.getTypeId() == 116680003L) {
+				System.out.println("Two IS As compared");
+			}
 
 			if (!isDestinationNegated() && !other.isDestinationNegated()) {
 
