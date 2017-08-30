@@ -22,8 +22,12 @@ import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.common.io.Files;
+
 import javax.annotation.PostConstruct;
+
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -118,6 +122,12 @@ public class SnomedReasonerService {
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
 		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
+
+		//TODO Temporary code to write taxonomy out to disk so we can check if the delta was correctly applied
+		/*File tempDir = Files.createTempDir();
+		logger.info("Saving existing taxonomy to {}", tempDir.getAbsolutePath());
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+		existingTaxonomy.saveToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();

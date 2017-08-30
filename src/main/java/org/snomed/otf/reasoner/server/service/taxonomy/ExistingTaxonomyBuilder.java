@@ -19,8 +19,9 @@ public class ExistingTaxonomyBuilder {
 			.withoutDescriptions();
 	
 	private static final LoadingProfile DELTA_LOADING_PROFILE = SNAPSHOT_LOADING_PROFILE
-			.withInactiveConcepts();  //The delta needs to be able to inactivate previously active concepts
-
+			.withInactiveConcepts()  //The delta needs to be able to inactivate previously active concepts
+			.withInactiveRelationships();  //The delta needs to be able to inactivate previously active relationships
+	
 	public ExistingTaxonomy build(InputStream snomedRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();

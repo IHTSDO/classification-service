@@ -945,6 +945,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return unionGroup.getRelationshipFragments().stream()
 				.map(input -> new StatementFragment(
 						input.getStatementId(),
+						-1,
+						-1,
 						input.getTypeId(),
 						input.getDestinationId(),
 						input.isDestinationNegated(),

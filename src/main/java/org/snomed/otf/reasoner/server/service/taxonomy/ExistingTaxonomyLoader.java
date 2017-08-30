@@ -37,8 +37,6 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	@Override
 	public void newRelationshipState(String id, String effectiveTime, String active, String moduleId, String sourceId, String destinationId, String relationshipGroup, String typeId, String characteristicTypeId, String modifierId) {
 
-		// Deal with mutable changes in the delta (groupId)
-
 		if (ACTIVE.equals(active)) {
 
 			boolean universal = UNIVERSAL_RESTRICTION_MODIFIER.equals(modifierId);
@@ -53,14 +51,14 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
-
 			boolean stated = STATED_RELATIONSHIP.equals(characteristicTypeId);
-
-			existingTaxonomy.addStatementFragment(
+			existingTaxonomy.addOrModifyStatementFragment(
 					stated,
 					parseLong(sourceId),
 					new StatementFragment(
 							parseLong(id),
+							parseLong(effectiveTime),
+							parseLong(moduleId),
 							parseLong(typeId),
 							parseLong(destinationId),
 							destinationNegated,
@@ -72,8 +70,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			);
 		} else if (loadingDelta) {
 			// Inactive relationships in the delta should be removed from the snapshot view
-			long fragmentId = parseLong(id);
-			existingTaxonomy.getStatementFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
+			existingTaxonomy.removeStatementFragment(sourceId, id);
 		}
 	}
 

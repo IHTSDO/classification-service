@@ -15,6 +15,7 @@
  */
 package org.snomed.otf.reasoner.server.service.model;
 
+import java.io.Writer;
 import java.net.URI;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants.CharacteristicType;
 
 import com.google.common.collect.Iterables;
 
@@ -105,5 +107,14 @@ public abstract class SnomedOntologyUtils implements SnomedConstants {
 
 	private SnomedOntologyUtils() {
 		// Prevent instantiation
+	}
+
+	public static String translateCharacteristicType(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case INFERRED : return  Concepts.INFERRED_RELATIONSHIP;
+			case STATED : return Concepts.STATED_RELATIONSHIP;
+			case ADDITIONAL : return Concepts.ADDITIONAL_RELATIONSHIP;
+		}
+		throw new IllegalArgumentException ( "Encountered unexpected characterstic type " + characteristicType);
 	}
 }
