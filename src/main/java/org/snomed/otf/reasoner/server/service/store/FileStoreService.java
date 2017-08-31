@@ -1,5 +1,7 @@
 package org.snomed.otf.reasoner.server.service.store;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ public class FileStoreService {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 	private static final String INPUT_DELTA_ZIP = "input/delta-rf2.zip";
 	private static final String RESULTS_ZIP = "output/classification-results-rf2.zip";
+
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public FileStoreService(@Value("${store.root-directory}") String storeRootDirectoryPath) {
 		this.storeRootDirectory = new File(storeRootDirectoryPath);
@@ -43,7 +47,10 @@ public class FileStoreService {
 		File file = new File(storeRootDirectory, "classifications/" + DATE_FORMAT.format(classification.getCreated()) + "/" + classification.getClassificationId() + "/" + relativePath);
 		if (!file.exists()) {
 			// Attempt to make directories
-			file.getParentFile().mkdirs();
+			File parentDirectory = file.getParentFile();
+			if (!parentDirectory.mkdirs()) {
+				logger.warn("Failed to create directory {}", parentDirectory.getAbsolutePath());
+			}
 		}
 		return file;
 	}
