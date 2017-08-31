@@ -3,6 +3,7 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 import org.ihtsdo.otf.snomedboot.factory.ImpotentComponentFactory;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
 import static java.lang.Long.parseLong;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.STATED_RELATIONSHIP;
@@ -12,20 +13,30 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 	private ExistingTaxonomy existingTaxonomy = new ExistingTaxonomy();
 	private static final String ACTIVE = "1";
+	private boolean loadingDelta;
 
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
+
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
 			existingTaxonomy.getAllConceptIds().add(id);
 			if (Concepts.FULLY_DEFINED.equals(definitionStatusId)) {
 				existingTaxonomy.getFullyDefinedConceptIds().add(id);
+			} else {
+				existingTaxonomy.getFullyDefinedConceptIds().remove(id);
 			}
+		} else if (loadingDelta) {
+			// Inactive concepts in the delta should be removed from the snapshot view
+			long id = parseLong(conceptId);
+			existingTaxonomy.getAllConceptIds().remove(id);
+			existingTaxonomy.getFullyDefinedConceptIds().remove(id);
 		}
 	}
 
 	@Override
 	public void newRelationshipState(String id, String effectiveTime, String active, String moduleId, String sourceId, String destinationId, String relationshipGroup, String typeId, String characteristicTypeId, String modifierId) {
+
 		if (ACTIVE.equals(active)) {
 
 			boolean universal = UNIVERSAL_RESTRICTION_MODIFIER.equals(modifierId);
@@ -40,21 +51,26 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
-
 			boolean stated = STATED_RELATIONSHIP.equals(characteristicTypeId);
-
-			existingTaxonomy.addStatementFragment(
+			existingTaxonomy.addOrModifyStatementFragment(
 					stated,
 					parseLong(sourceId),
 					new StatementFragment(
 							parseLong(id),
+							parseLong(effectiveTime),
+							parseLong(moduleId),
 							parseLong(typeId),
 							parseLong(destinationId),
 							destinationNegated,
 							Integer.parseInt(relationshipGroup),
 							unionGroup,
-							universal)
+							universal,
+							SnomedOntologyUtils.translateCharacteristicType(characteristicTypeId)
+							)
 			);
+		} else if (loadingDelta) {
+			// Inactive relationships in the delta should be removed from the snapshot view
+			existingTaxonomy.removeStatementFragment(sourceId, id);
 		}
 	}
 
@@ -62,4 +78,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 		return existingTaxonomy;
 	}
 
+	public void startLoadingDelta() {
+		loadingDelta = true;
+	}
 }

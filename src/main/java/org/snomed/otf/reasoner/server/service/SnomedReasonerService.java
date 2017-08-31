@@ -22,8 +22,12 @@ import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.common.io.Files;
+
 import javax.annotation.PostConstruct;
+
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -65,13 +69,13 @@ public class SnomedReasonerService {
 		}, "job-polling-thread").start();
 	}
 
-	public Classification queueClassification(InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
+	public Classification queueClassification(String previousRelease, InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
-		Classification classification = new Classification(branch, reasonerId);
+		Classification classification = new Classification(previousRelease, branch, reasonerId);
 
 		// Persist input archive
 		try {
-			fileStoreService.saveSnapshotInput(classification, snomedRf2SnapshotArchive);
+			fileStoreService.saveDeltaInput(classification, snomedRf2SnapshotArchive);
 		} catch (IOException e) {
 			throw new IOException("Failed to persist input archive.", e);
 		}
@@ -85,8 +89,11 @@ public class SnomedReasonerService {
 
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
-		try (FileInputStream snomedRf2SnapshotArchive = fileStoreService.loadSnapshotInput(classification)) {
-			File resultsArchive = classify(snomedRf2SnapshotArchive, classification.getReasonerId());
+		try (InputStream previousReleaseRf2SnapshotArchive = fileStoreService.loadPreviousRelease(classification.getPreviousRelease());
+			 InputStream currentReleaseRf2DeltaArchive = fileStoreService.loadDeltaInput(classification)) {
+
+			File resultsArchive = classify(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive, classification.getReasonerId());
+
 			fileStoreService.saveResults(classification, resultsArchive);
 			classification.setStatus(ClassificationStatus.COMPLETED);
 		} catch (ReasonerServiceException e) {
@@ -94,9 +101,9 @@ public class SnomedReasonerService {
 		} catch (OWLOntologyCreationException e) {
 			classificationFailed(classification, e, "Failed to create OWL Ontology.");
 		} catch (ReleaseImportException e) {
-			classificationFailed(classification, e, "Failed to import RF2 data.");
+			classificationFailed(classification, e, "Failed to import RF2 content.");
 		} catch (IOException e) {
-			classificationFailed(classification, e, "Failed to load input archive.");
+			classificationFailed(classification, e, "Failed to load RF2 files.");
 		}
 	}
 
@@ -107,14 +114,20 @@ public class SnomedReasonerService {
 		classification.setDeveloperMessage(e.getMessage());
 	}
 
-	public File classify(InputStream snomedRf2SnapshotArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
+	public File classify(InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
 		logger.info("Checking requested reasoner is available");
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
-		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(snomedRf2SnapshotArchive);
+		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
+
+		//TODO Temporary code to write taxonomy out to disk so we can check if the delta was correctly applied
+		/*File tempDir = Files.createTempDir();
+		logger.info("Saving existing taxonomy to {}", tempDir.getAbsolutePath());
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+		existingTaxonomy.saveToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();
@@ -147,6 +160,7 @@ public class SnomedReasonerService {
 		logger.info("Writing results archive");
 		File resultsRf2Archive = resultsService.createResultsRf2Archive(changeCollector, reasonerTaxonomy.getEquivalentConceptIds(), startDate);
 
+		logger.info("Archive written to: {}", resultsRf2Archive.getAbsolutePath());
 		logger.info("{} seconds total", (new Date().getTime() - startDate.getTime())/1000f);
 
 		return resultsRf2Archive;

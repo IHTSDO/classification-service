@@ -15,18 +15,22 @@
  */
 package org.snomed.otf.reasoner.server.service.model;
 
+import java.io.Writer;
 import java.net.URI;
 import java.util.Set;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
+import org.snomed.otf.reasoner.server.service.constants.Concepts;
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants.CharacteristicType;
 
 import com.google.common.collect.Iterables;
 
 /**
  * Utility class that holds OWL object identifier prefixes as well as methods for creating class expressions for object intersections and unions.
  */
-public abstract class SnomedOntologyUtils {
+public abstract class SnomedOntologyUtils implements SnomedConstants {
 
 	public static final String BASE_NAMESPACE = "http://snomed.org/";
 	public static final IRI BASE_IRI = IRI.create(BASE_NAMESPACE);
@@ -91,8 +95,26 @@ public abstract class SnomedOntologyUtils {
 			return Iterables.getOnlyElement(terms); // Also handles case when terms is empty
 		}
 	}
+	
+	public static CharacteristicType translateCharacteristicType (String charTypeSctId) {
+		switch (charTypeSctId) {
+			case Concepts.INFERRED_RELATIONSHIP : return CharacteristicType.INFERRED;
+			case Concepts.STATED_RELATIONSHIP : return CharacteristicType.STATED;
+			case Concepts.ADDITIONAL_RELATIONSHIP : return CharacteristicType.ADDITIONAL;
+		}
+		throw new IllegalArgumentException ( "Encountered unexpected characterstic type id " + charTypeSctId);
+	}
 
 	private SnomedOntologyUtils() {
 		// Prevent instantiation
+	}
+
+	public static String translateCharacteristicType(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case INFERRED : return  Concepts.INFERRED_RELATIONSHIP;
+			case STATED : return Concepts.STATED_RELATIONSHIP;
+			case ADDITIONAL : return Concepts.ADDITIONAL_RELATIONSHIP;
+		}
+		throw new IllegalArgumentException ( "Encountered unexpected characterstic type " + characteristicType);
 	}
 }

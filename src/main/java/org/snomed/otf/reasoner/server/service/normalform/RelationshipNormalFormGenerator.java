@@ -406,6 +406,10 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 			if (isUniversal() != other.isUniversal()) {
 				return false;
 			}
+			
+			if (this.getTypeId() == 116680003L && other.getTypeId() == 116680003L) {
+				System.out.println("Two IS As compared");
+			}
 
 			if (!isDestinationNegated() && !other.isDestinationNegated()) {
 
@@ -941,12 +945,15 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return unionGroup.getRelationshipFragments().stream()
 				.map(input -> new StatementFragment(
 						input.getStatementId(),
+						-1,
+						-1,
 						input.getTypeId(),
 						input.getDestinationId(),
 						input.isDestinationNegated(),
 						groupNumber,
 						unionGroupNumber,
-						input.isUniversal()))
+						input.isUniversal(),
+						null))
 				.collect(Collectors.toSet());
 	}
 

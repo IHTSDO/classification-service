@@ -24,14 +24,15 @@ public class ClassificationController {
 	private SnomedReasonerService snomedReasonerService;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
-	public ResponseEntity createClassification(@RequestParam MultipartFile rf2Delta,
+	public ResponseEntity createClassification(@RequestParam String previousRelease,
+											   @RequestParam MultipartFile rf2Delta,
 											   @RequestParam(required = false) String branch,
 											   @RequestParam(defaultValue = DEFAULT_REASONER_FACTORY) String reasonerId,
 											   UriComponentsBuilder uriComponentsBuilder) {
 
 		Classification classification;
 		try {
-			classification = snomedReasonerService.queueClassification(rf2Delta.getInputStream(), reasonerId, branch);
+			classification = snomedReasonerService.queueClassification(previousRelease, rf2Delta.getInputStream(), reasonerId, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}

@@ -8,11 +8,13 @@ public final class Classification {
 	private final String branch;
 	private final String reasonerId;
 	private final Date created;
+	private final String previousRelease;
 	private ClassificationStatus status;
 	private String errorMessage;
 	private String developerMessage;
 
-	public Classification(String branch, String reasonerId) {
+	public Classification(String previousRelease, String branch, String reasonerId) {
+		this.previousRelease = previousRelease;
 		this.classificationId = UUID.randomUUID().toString();
 		this.branch = branch;
 		this.reasonerId = reasonerId;
@@ -40,6 +42,10 @@ public final class Classification {
 		return reasonerId;
 	}
 
+	public String getPreviousRelease() {
+		return previousRelease;
+	}
+
 	public void setStatus(ClassificationStatus status) {
 		this.status = status;
 	}
@@ -59,4 +65,5 @@ public final class Classification {
 	public String getDeveloperMessage() {
 		return developerMessage;
 	}
+
 }

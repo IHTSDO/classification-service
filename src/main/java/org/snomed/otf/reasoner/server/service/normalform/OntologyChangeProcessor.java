@@ -34,8 +34,6 @@ public abstract class OntologyChangeProcessor<T> {
 
 	public void apply(final long conceptId, final Collection<T> oldCollection, final Collection<T> newCollection, final Ordering<T> ordering) {
 		
-		final int unitsOfWork = oldCollection.size() + newCollection.size();
-
 		final TreeSet<T> uniqueOlds = Sets.newTreeSet(ordering);
 		final ImmutableList<T> sortedOld = ordering.immutableSortedCopy(oldCollection);
 		final ImmutableList<T> sortedNew = ordering.immutableSortedCopy(newCollection);
