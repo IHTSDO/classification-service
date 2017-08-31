@@ -127,7 +127,7 @@ public class SnomedReasonerService {
 		/*File tempDir = Files.createTempDir();
 		logger.info("Saving existing taxonomy to {}", tempDir.getAbsolutePath());
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-		existingTaxonomy.saveToDisk(tempDir, df.format(new Date()) "20170731"); */
+		existingTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
 		DelegateOntology delegateOntology = new OntologyService().createOntology();

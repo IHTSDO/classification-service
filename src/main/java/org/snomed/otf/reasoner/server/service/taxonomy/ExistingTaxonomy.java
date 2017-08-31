@@ -12,7 +12,6 @@ import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -25,10 +24,11 @@ public class ExistingTaxonomy {
 
 	private Set<Long> allConceptIds = new LongOpenHashSet();
 	private Set<Long> fullyDefinedConceptIds = new LongOpenHashSet();
-	private Map<Long, StatementFragment> statementFragmentsById = new HashMap<Long, StatementFragment>();
-	private Map<Long, Set<StatementFragment>> statementFragmentMap = new Long2ObjectOpenHashMap<>();
-	private Map<Long, Set<StatementFragment>> inferredStatementMap = new Long2ObjectOpenHashMap<>();
-	private Map<Long, Set<Long>> subTypesMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, StatementFragment> statedFragmentsById = new HashMap<>();
+	private Map<Long, StatementFragment> inferredFragmentsById = new HashMap<>();
+	private Map<Long, Set<StatementFragment>> conceptStatedFragmentMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, Set<StatementFragment>> conceptInferredFragmentMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, Set<Long>> statedSubTypesMap = new Long2ObjectOpenHashMap<>();
 
 	public boolean isPrimitive(Long conceptId) {
 		return !fullyDefinedConceptIds.contains(conceptId);
@@ -45,30 +45,33 @@ public class ExistingTaxonomy {
 	 * @return the active source relationships.
 	 */
 	public Collection<StatementFragment> getStatementFragments(Long conceptId) {
-		return statementFragmentMap.getOrDefault(conceptId, Collections.emptySet());
+		return conceptStatedFragmentMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 	
 	public Collection<StatementFragment> getInferredFragments(Long conceptId) {
-		return inferredStatementMap.getOrDefault(conceptId, Collections.emptySet());
+		return conceptInferredFragmentMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 
 	public void addOrModifyStatementFragment(boolean stated, long conceptId, StatementFragment statementFragment) {
-		//Have we seen this relationship before ie we need to modify it?
-		if (statementFragmentsById.containsKey(statementFragment.getStatementId())) {
-			StatementFragment existingFragment = statementFragmentsById.get(statementFragment.getStatementId());
-			//Only effectivetime and groupId are mutable
+		// Have we seen this relationship before ie we need to modify it?
+		StatementFragment existingFragment = stated ? statedFragmentsById.get(statementFragment.getStatementId())
+				: inferredFragmentsById.get(statementFragment.getStatementId());
+
+		if (existingFragment != null) {
+			// Only effectiveTime and groupId are mutable
 			existingFragment.setEffectiveTime(statementFragment.getEffectiveTime());
 			existingFragment.setGroup(statementFragment.getGroup());
 		} else {  //add fragment
 			if (stated) {
-				statementFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
+				conceptStatedFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
 				if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
-					subTypesMap.computeIfAbsent(statementFragment.getDestinationId(), k -> new HashSet<>()).add(conceptId);
+					statedSubTypesMap.computeIfAbsent(statementFragment.getDestinationId(), k -> new HashSet<>()).add(conceptId);
 				}
+				statedFragmentsById.put(statementFragment.getStatementId(), statementFragment);
 			} else {
-				inferredStatementMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
+				conceptInferredFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
+				inferredFragmentsById.put(statementFragment.getStatementId(), statementFragment);
 			}
-			statementFragmentsById.put(statementFragment.getStatementId(), statementFragment);
 		}
 	}
 
@@ -102,7 +105,7 @@ public class ExistingTaxonomy {
 		}
 
 		// Check all ancestors for the attribute concept
-		for (StatementFragment statementFragment : statementFragmentMap.get(conceptId)) {
+		for (StatementFragment statementFragment : conceptStatedFragmentMap.get(conceptId)) {
 			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
 				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor, ++depth);
 			}
@@ -116,7 +119,7 @@ public class ExistingTaxonomy {
 		}
 
 		Set<Long> superTypes = new HashSet<>();
-		for (StatementFragment statementFragment : statementFragmentMap.get(conceptId)) {
+		for (StatementFragment statementFragment : conceptStatedFragmentMap.get(conceptId)) {
 			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
 				superTypes.add(statementFragment.getDestinationId());
 			}
@@ -125,11 +128,11 @@ public class ExistingTaxonomy {
 	}
 
 	public Collection<StatementFragment> getNonIsAFragments(Long conceptId) {
-		return statementFragmentMap.getOrDefault(conceptId, Collections.emptySet()).stream().filter(f -> f.getTypeId() != Concepts.IS_A_LONG).collect(Collectors.toList());
+		return conceptStatedFragmentMap.getOrDefault(conceptId, Collections.emptySet()).stream().filter(f -> f.getTypeId() != Concepts.IS_A_LONG).collect(Collectors.toList());
 	}
 
 	public Set<Long> getSubTypeIds(long conceptId) {
-		Set<Long> longs = subTypesMap.get(conceptId);
+		Set<Long> longs = statedSubTypesMap.get(conceptId);
 		return longs != null ? longs : Collections.emptySet();
 	}
 
@@ -151,22 +154,22 @@ public class ExistingTaxonomy {
 	}
 
 	public Collection<StatementFragment> getInferredStatementFragments(long conceptId) {
-		return inferredStatementMap.getOrDefault(conceptId, Collections.emptySet());
+		return conceptInferredFragmentMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 
-	public void saveToDisk(File tempDir, String effectiveDate) throws ReasonerServiceException {
+	public void debugDumpToDisk(File tempDir, String effectiveDate) throws ReasonerServiceException {
 		try {
 			File outputFile = new File(tempDir,  "sct2_StatedRelationship_Snapshot_INT_" + effectiveDate + ".txt");
-			saveFragmentsToDisk(statementFragmentMap, outputFile);
-			
+			saveFragmentsToDisk(conceptStatedFragmentMap, outputFile);
+
 			outputFile = new File(tempDir,  "sct2_Relationship_Snapshot_INT_" + effectiveDate + ".txt");
-			saveFragmentsToDisk (inferredStatementMap, outputFile);
+			saveFragmentsToDisk (conceptInferredFragmentMap, outputFile);
 		} catch (IOException e) {
 			throw new ReasonerServiceException("Unable to save existing taxonomy to disk",e);
 		}
 	}
 
-	private void saveFragmentsToDisk( Map<Long, Set<StatementFragment>> fragmentMap, File outputFile) throws FileNotFoundException, IOException {
+	private void saveFragmentsToDisk(Map<Long, Set<StatementFragment>> fragmentMap, File outputFile) throws IOException {
 		String TSV_FIELD_DELIMITER = "\t";
 		String LINE_DELIMITER = "\r\n";
 		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(outputFile, true), StandardCharsets.UTF_8);
@@ -175,10 +178,10 @@ public class ExistingTaxonomy {
 		{
 			String header = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId";
 			out.print(header + LINE_DELIMITER);
-			
-			StringBuffer line = new StringBuffer();
+
+			StringBuilder line = new StringBuilder();
 			for (Map.Entry<Long, Set<StatementFragment>> fragSetEntry : fragmentMap.entrySet()) {
-				
+
 				for (StatementFragment frag : fragSetEntry.getValue()) {
 					line.setLength(0);
 					line.append(frag.getStatementId()).append(TSV_FIELD_DELIMITER)
@@ -194,13 +197,17 @@ public class ExistingTaxonomy {
 					out.print(line.toString() + LINE_DELIMITER);
 				}
 			}
-		} 
+		}
 	}
 
-	public void removeStatementFragment(String sourceId, String fragmentIdStr) {
+	public void removeStatementFragment(boolean stated, String sourceId, String fragmentIdStr) {
 		long fragmentId = parseLong(fragmentIdStr);
-		getStatementFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
-		getInferredFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
-		statementFragmentsById.remove(fragmentId);
+		if (stated) {
+			getStatementFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
+			statedFragmentsById.remove(fragmentId);
+		} else {
+			getInferredFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
+			inferredFragmentsById.remove(fragmentId);
+		}
 	}
 }
