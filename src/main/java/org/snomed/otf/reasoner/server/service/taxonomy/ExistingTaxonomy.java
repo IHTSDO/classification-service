@@ -61,7 +61,8 @@ public class ExistingTaxonomy {
 			// Only effectiveTime and groupId are mutable
 			existingFragment.setEffectiveTime(statementFragment.getEffectiveTime());
 			existingFragment.setGroup(statementFragment.getGroup());
-		} else {  //add fragment
+		} else {
+			// add fragment
 			if (stated) {
 				conceptStatedFragmentMap.computeIfAbsent(conceptId, k -> new HashSet<>()).add(statementFragment);
 				if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {

@@ -1,10 +1,13 @@
 package org.snomed.otf.reasoner.server.service.taxonomy;
 
+import com.google.common.base.Strings;
 import org.ihtsdo.otf.snomedboot.factory.ImpotentComponentFactory;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
 import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Long.parseLong;
@@ -16,6 +19,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	private ExistingTaxonomy existingTaxonomy = new ExistingTaxonomy();
 	private static final String ACTIVE = "1";
 	private boolean loadingDelta;
+	private int effectiveTimeNow = Integer.parseInt(new SimpleDateFormat("yyyyMMdd").format(new Date()));
 
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
@@ -54,12 +58,13 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
+			int effectiveTimeInt = !Strings.isNullOrEmpty(effectiveTime) ? Integer.parseInt(effectiveTime) : effectiveTimeNow;
 			existingTaxonomy.addOrModifyStatementFragment(
 					stated,
 					parseLong(sourceId),
 					new StatementFragment(
 							parseLong(id),
-							parseLong(effectiveTime),
+							effectiveTimeInt,
 							parseLong(moduleId),
 							parseLong(typeId),
 							parseLong(destinationId),

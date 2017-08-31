@@ -5,7 +5,7 @@ import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
 public class StatementFragment implements SnomedConstants {
 
 	private final long statementId;
-	private long effectiveTime;
+	private int effectiveTime;
 	private final long moduleId;
 	private final long typeId;
 	private final long destinationId;
@@ -20,7 +20,7 @@ public class StatementFragment implements SnomedConstants {
 	}
 
 	public StatementFragment(long statementId,
-							 long effectiveTime,
+							 int effectiveTime,
 							 long moduleId,
 							 long typeId,
 							 long destinationId,
@@ -81,11 +81,11 @@ public class StatementFragment implements SnomedConstants {
 		return moduleId;
 	}
 
-	public long getEffectiveTime() {
+	public int getEffectiveTime() {
 		return effectiveTime;
 	}
 
-	public void setEffectiveTime(long effectiveTime) {
+	public void setEffectiveTime(int effectiveTime) {
 		this.effectiveTime = effectiveTime;
 	}
 
