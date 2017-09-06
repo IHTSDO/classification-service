@@ -32,7 +32,7 @@ class ClassificationResultsService {
 				zipOutputStream.putNextEntry(new ZipEntry(String.format("RF2/sct2_Relationship_Delta_Classification_%s.txt", formattedDate)));
 				writeRelationshipChanges(writer, changeCollector.getAddedStatements(), changeCollector.getRemovedStatements());
 
-				zipOutputStream.putNextEntry(new ZipEntry(String.format("RF2/der2_sRefset_EquivalentConceptSimpleMapDelta_INT_%s.txt", formattedDate)));
+				zipOutputStream.putNextEntry(new ZipEntry(String.format("RF2/der2_sRefset_EquivalentConceptSimpleMapDelta_Classification_%s.txt", formattedDate)));
 				writeEquivalentConcepts(writer, equivalentConceptIdSets);
 			}
 		} catch (IOException e) {
