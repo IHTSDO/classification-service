@@ -1,24 +1,18 @@
 package org.snomed.otf.reasoner.server.service.taxonomy;
 
-import static java.lang.Long.parseLong;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-
 import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.ConcreteDomainFragment;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
-import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.lang.Long.parseLong;
 
 public class ExistingTaxonomy {
 
@@ -81,6 +75,7 @@ public class ExistingTaxonomy {
 		return Collections.emptySet();
 	}
 
+	// TODO: Replace this - just collect the attributes used in active relationships
 	public Set<Long> getAttributeConceptIds() {
 		Set<Long> attributeIds = new HashSet<>();
 		for (Long conceptId : allConceptIds) {
@@ -193,7 +188,7 @@ public class ExistingTaxonomy {
 						.append(frag.getDestinationId()).append(TSV_FIELD_DELIMITER)
 						.append(frag.getGroup()).append(TSV_FIELD_DELIMITER)
 						.append(frag.getTypeId()).append(TSV_FIELD_DELIMITER)
-						.append(SnomedOntologyUtils.translateCharacteristicType(frag.getCharacteristicType())).append(TSV_FIELD_DELIMITER)
+						.append(frag.getCharacteristicType()).append(TSV_FIELD_DELIMITER)
 						.append(Concepts.EXISTENTIAL_RESTRICTION_MODIFIER);
 					out.print(line.toString() + LINE_DELIMITER);
 				}

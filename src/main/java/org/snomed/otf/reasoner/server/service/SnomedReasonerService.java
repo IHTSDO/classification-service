@@ -1,11 +1,13 @@
 package org.snomed.otf.reasoner.server.service;
 
-import org.coode.owlapi.functionalrenderer.OWLFunctionalSyntaxRenderer;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
+import org.semanticweb.elk.owlapi.ElkReasonerFactory;
+import org.semanticweb.owlapi.functional.renderer.OWLFunctionalSyntaxRenderer;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
+import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -14,7 +16,6 @@ import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomyWalker;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeCollector;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
-import org.snomed.otf.reasoner.server.service.ontology.DelegateOntology;
 import org.snomed.otf.reasoner.server.service.ontology.OntologyService;
 import org.snomed.otf.reasoner.server.service.store.FileStoreService;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
@@ -22,13 +23,11 @@ import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.google.common.io.Files;
-
 import javax.annotation.PostConstruct;
-
 import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -116,8 +115,6 @@ public class SnomedReasonerService {
 
 	public File classify(InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
-		logger.info("Checking requested reasoner is available");
-		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
@@ -130,15 +127,15 @@ public class SnomedReasonerService {
 		existingTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
-		DelegateOntology delegateOntology = new OntologyService().createOntology();
-		delegateOntology.setExistingTaxonomy(existingTaxonomy);
+		OWLOntology owlOntology = new OntologyService().createOntology(existingTaxonomy);
 
 		// Uncomment for debugging
-		// serialiseOntologyForDebug(delegateOntology);
+		// serialiseOntologyForDebug(owlOntology);
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
-		OWLReasoner reasoner = reasonerFactory.createReasoner(delegateOntology, configuration);
+		OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
+		OWLReasoner reasoner = reasonerFactory.createReasoner(owlOntology, configuration);
 
 		logger.info("OwlReasoner inferring class hierarchy");
 		reasoner.flush();
@@ -147,7 +144,7 @@ public class SnomedReasonerService {
 		logger.info("{} seconds so far", (new Date().getTime() - startDate.getTime())/1000f);
 
 		logger.info("Extract ReasonerTaxonomy");
-		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), delegateOntology.getPrefixManager());
+		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), new DefaultPrefixManager());
 		ReasonerTaxonomy reasonerTaxonomy = walker.walk();
 
 		logger.info("Generate normal form");
@@ -164,18 +161,6 @@ public class SnomedReasonerService {
 		logger.info("{} seconds total", (new Date().getTime() - startDate.getTime())/1000f);
 
 		return resultsRf2Archive;
-	}
-
-	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceException {
-		Class<?> reasonerFactoryClass = null;
-		try {
-			reasonerFactoryClass = Class.forName(reasonerFactoryClassName);
-			return (OWLReasonerFactory) reasonerFactoryClass.newInstance();
-		} catch (ClassNotFoundException e) {
-			throw new ReasonerServiceException(String.format("Requested reasoner class '%s' not found.", reasonerFactoryClassName), e);
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new ReasonerServiceException(String.format("An instance of requested reasoner '%s' could not be created.", reasonerFactoryClass), e);
-		}
 	}
 
 	private void serialiseOntologyForDebug(OWLOntology ontology) {

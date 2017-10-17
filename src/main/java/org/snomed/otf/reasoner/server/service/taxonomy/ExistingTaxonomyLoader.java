@@ -3,12 +3,11 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 import com.google.common.base.Strings;
 import org.ihtsdo.otf.snomedboot.factory.ImpotentComponentFactory;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
+import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
-import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Long.parseLong;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.STATED_RELATIONSHIP;
@@ -72,7 +71,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 							Integer.parseInt(relationshipGroup),
 							unionGroup,
 							universal,
-							SnomedOntologyUtils.translateCharacteristicType(characteristicTypeId)
+							SnomedConstants.CharacteristicType.fromConceptId(characteristicTypeId)
 					)
 			);
 		} else if (loadingDelta) {

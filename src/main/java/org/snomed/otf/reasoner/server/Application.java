@@ -1,7 +1,8 @@
 package org.snomed.otf.reasoner.server;
 
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
@@ -22,6 +23,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
@@ -37,8 +42,32 @@ public class Application {
 
 	public static final String DEFAULT_REASONER_FACTORY = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws OWLOntologyCreationException {
 		SpringApplication.run(Application.class, args);
+	}
+
+	public static void mainDiff(String[] args) throws OWLOntologyCreationException {
+		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+		OWLOntology owlOntology1 = manager.loadOntologyFromOntologyDocument(new File("debug/classificationMap/6.owl"));
+		OWLOntology owlOntology2 = manager.loadOntologyFromOntologyDocument(new File("debug/classificationMap/1.owl"));
+
+		Set<OWLAxiom> axioms1 = owlOntology1.getAxioms();
+		Set<OWLAxiom> axioms2 = owlOntology2.getAxioms();
+
+		Map<AxiomType, AtomicInteger> foundTypeCount = new HashMap<>();
+		Map<AxiomType, AtomicInteger> missingTypeCount = new HashMap<>();
+		for (OWLAxiom owlAxiom1 : axioms1) {
+			if (axioms2.contains(owlAxiom1)) {
+				foundTypeCount.computeIfAbsent(owlAxiom1.getAxiomType(), t -> new AtomicInteger()).incrementAndGet();
+			} else {
+				int i = missingTypeCount.computeIfAbsent(owlAxiom1.getAxiomType(), t -> new AtomicInteger()).incrementAndGet();
+				if (i < 100) {
+					System.out.println("Not found - " + owlAxiom1);
+				}
+			}
+		}
+		System.out.println("Found " + foundTypeCount);
+		System.out.println("Missing " + missingTypeCount);
 	}
 
 	// Uncomment for manual classification testing
@@ -46,7 +75,7 @@ public class Application {
 	private void testClassification() {
 		// Path to a SNOMED release on local disk
 		String snomedRf2SnapshotArchivePath = "store/releases/SnomedCT_InternationalRF2_Production_20170131T120000WithoutRT.zip";
-		String snomedRf2DeltaArchivePath = "release/xSnomedCT_InternationalRF2_BETA_20170731T120000Z.zip";
+		String snomedRf2DeltaArchivePath = "release/SnomedCT-RF2-20170731.zip";
 //		String snomedRf2DeltaArchivePath = "testing/SnomedCT_Release_INT.zip";
 //		String snomedRf2SnapshotArchivePath = "release/SnomedCT_InternationalRF2_Production_20170131.zip";
 		try {

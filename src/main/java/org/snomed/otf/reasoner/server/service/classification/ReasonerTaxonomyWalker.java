@@ -24,7 +24,7 @@ import org.semanticweb.owlapi.reasoner.impl.OWLClassNodeSet;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.reasoner.server.service.model.SnomedOntologyUtils;
+import org.snomed.otf.reasoner.server.service.ontology.OntologyService;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -193,7 +193,7 @@ public class ReasonerTaxonomyWalker {
 	}
 
 	private boolean isConceptClass(final OWLClass owlClass) {
-		return hasPrefix(owlClass, SnomedOntologyUtils.PREFIX_CONCEPT);
+		return hasPrefix(owlClass, OntologyService.SNOMED_CONCEPT);
 	}
 
 	private boolean hasPrefix(final OWLClass owlClass, final String prefix) {
@@ -201,7 +201,7 @@ public class ReasonerTaxonomyWalker {
 	}
 
 	private long getConceptId(final OWLClass owlClass) {
-		final String strippedShortForm = prefixManager.getShortForm(owlClass.getIRI()).substring(SnomedOntologyUtils.PREFIX_SNOMED.length());
+		final String strippedShortForm = prefixManager.getShortForm(owlClass.getIRI()).substring(OntologyService.SNOMED.length());
 		return Long.parseLong(strippedShortForm.split("_")[1]);
 	}
 }

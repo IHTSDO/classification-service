@@ -1,24 +1,140 @@
 package org.snomed.otf.reasoner.server.service.ontology;
 
+import com.google.common.collect.Sets;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.util.DefaultPrefixManager;
+import org.snomed.otf.reasoner.server.service.constants.Concepts;
+import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
+import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import static java.lang.Long.parseLong;
 
 public class OntologyService {
 
 	public static final String SNOMED_IRI = "http://snomed.info/id/";
+	public static final String SNOMED = "snomed:";
+	public static final String SNOMED_CONCEPT = SNOMED + "concept_";
+	public static final String ROLE = "role_";
+	public static final String SNOMED_ROLE = SNOMED + ROLE;
+	public static final String SNOMED_ROLE_GROUP = SNOMED + "roleGroup";
+	public static final String SNOMED_ROLE_HAS_MEASUREMENT = SNOMED + "roleHasMeasurement";
+
+	public static final Set<Long> NEVER_GROUPED_ROLE_IDS = Sets.newHashSet(
+			parseLong(Concepts.PART_OF),
+			parseLong(Concepts.LATERALITY),
+			parseLong(Concepts.HAS_DOSE_FORM),
+			parseLong(Concepts.HAS_ACTIVE_INGREDIENT)
+	);
 
 	private final OWLOntologyManager manager;
+	private OWLDataFactory factory;
+	private DefaultPrefixManager prefixManager;
 
 	public OntologyService() {
 		manager = OWLManager.createOWLOntologyManager();
-		manager.addOntologyFactory(new DelegateOntologyFactory());
+		factory = new OWLDataFactoryImpl();
+		prefixManager = new DefaultPrefixManager();
+		prefixManager.setPrefix(SNOMED, SNOMED_IRI);
 	}
 
-	public DelegateOntology createOntology() throws OWLOntologyCreationException {
-		IRI ontologyIRI = IRI.create(SNOMED_IRI);
-		DelegateOntology delegateOntology = (DelegateOntology) manager.createOntology(ontologyIRI);
-		return delegateOntology;
+	public OWLOntology createOntology(ExistingTaxonomy existingTaxonomy) throws OWLOntologyCreationException {
+
+		Set<OWLAxiom> axioms = new HashSet<>();
+
+		// Create Axioms of Snomed attributes
+		Set<Long> attributeConceptIds = existingTaxonomy.getAttributeConceptIds();
+		for (Long attributeConceptId : attributeConceptIds) {
+			for (StatementFragment statementFragment : existingTaxonomy.getStatementFragments(attributeConceptId)) {
+				if (statementFragment.getTypeId() == Concepts.IS_A_LONG && statementFragment.getDestinationId() != Concepts.CONCEPT_MODEL_ATTRIBUTE_LONG) {
+					axioms.add(factory.getOWLSubObjectPropertyOfAxiom(getOwlObjectProperty(attributeConceptId), getOwlObjectProperty(statementFragment.getDestinationId())));
+				}
+			}
+		}
+
+		// Create Axioms of all other Snomed concepts
+		for (Long conceptId : existingTaxonomy.getAllConceptIds()) {
+			OWLClass conceptClass = getOwlClass(conceptId);
+
+			// Process all concept's relationships
+			final Set<OWLClassExpression> terms = new HashSet<>();
+			Map<Integer, ExpressionGroup> nonZeroRoleGroups = new TreeMap<>();
+			for (StatementFragment statementFragment : existingTaxonomy.getStatementFragments(conceptId)) {
+				int group = statementFragment.getGroup();
+				long typeId = statementFragment.getTypeId();
+				long destinationId = statementFragment.getDestinationId();
+				if (typeId == Concepts.IS_A_LONG) {
+					terms.add(getOwlClass(destinationId));
+				} else if (group == 0) {
+					if (NEVER_GROUPED_ROLE_IDS.contains(typeId)) {
+						terms.add(getOwlObjectSomeValuesFrom(typeId, destinationId));
+					} else {
+						terms.add(getOwlObjectSomeValuesFromGroup(getOwlObjectSomeValuesFrom(typeId, destinationId)));
+					}
+				} else {
+					// Create sets of statements in the same role group
+					nonZeroRoleGroups.computeIfAbsent(group, g -> new ExpressionGroup())
+							.addMember(getOwlObjectSomeValuesFrom(typeId, destinationId));
+					if (typeId == Concepts.HAS_ACTIVE_INGREDIENT_LONG) {
+						nonZeroRoleGroups.get(group).setHasActiveIngredientClassExpression(getOwlObjectSomeValuesFrom(typeId, destinationId));
+					}
+				}
+			}
+
+			// For each role group if there is more than one statement in the group we wrap them in an ObjectIntersectionOf statement
+			for (Integer group : nonZeroRoleGroups.keySet()) {
+				ExpressionGroup expressionGroup = nonZeroRoleGroups.get(group);
+				Set<OWLClassExpression> groupTerms = expressionGroup.getMembers();
+				if (expressionGroup.getHasActiveIngredientClassExpression() != null) {
+					terms.add(getOwlObjectSomeValuesWithPrefix(SNOMED_ROLE_HAS_MEASUREMENT, getOnlyValueOrIntersection(groupTerms)));
+					terms.add(expressionGroup.getHasActiveIngredientClassExpression());
+				} else {
+					terms.add(getOwlObjectSomeValuesFromGroup(getOnlyValueOrIntersection(groupTerms)));
+				}
+			}
+
+			if (terms.isEmpty()) {
+				// SNOMED CT root concept
+				terms.add(factory.getOWLThing());
+			}
+
+			if (existingTaxonomy.isPrimitive(conceptId)) {
+				axioms.add(factory.getOWLSubClassOfAxiom(conceptClass, getOnlyValueOrIntersection(terms)));
+			} else {
+				axioms.add(factory.getOWLEquivalentClassesAxiom(conceptClass, getOnlyValueOrIntersection(terms)));
+			}
+		}
+
+		return manager.createOntology(axioms, IRI.create(SNOMED_IRI));
+	}
+
+	private OWLClassExpression getOnlyValueOrIntersection(Set<OWLClassExpression> terms) {
+		return terms.size() == 1 ? terms.iterator().next() : factory.getOWLObjectIntersectionOf(terms);
+	}
+
+	private OWLObjectSomeValuesFrom getOwlObjectSomeValuesFromGroup(OWLClassExpression owlObjectSomeValuesFrom) {
+		return getOwlObjectSomeValuesWithPrefix(SNOMED_ROLE_GROUP, owlObjectSomeValuesFrom);
+	}
+
+	private OWLObjectSomeValuesFrom getOwlObjectSomeValuesWithPrefix(String prefix, OWLClassExpression owlObjectSomeValuesFrom) {
+		return factory.getOWLObjectSomeValuesFrom(factory.getOWLObjectProperty(prefix, prefixManager), owlObjectSomeValuesFrom);
+	}
+
+	private OWLObjectSomeValuesFrom getOwlObjectSomeValuesFrom(long typeId, long destinationId) {
+		return factory.getOWLObjectSomeValuesFrom(getOwlObjectProperty(typeId), getOwlClass(destinationId));
+	}
+
+	private OWLObjectProperty getOwlObjectProperty(long typeId) {
+		return factory.getOWLObjectProperty(SNOMED_ROLE + typeId, prefixManager);
+	}
+
+	private OWLClass getOwlClass(Long conceptId) {
+		return factory.getOWLClass(SNOMED_CONCEPT + conceptId, prefixManager);
 	}
 }
