@@ -1,7 +1,6 @@
 package org.snomed.otf.reasoner.server.service;
 
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
-import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.functional.renderer.OWLFunctionalSyntaxRenderer;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -115,6 +114,8 @@ public class SnomedReasonerService {
 
 	public File classify(InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
+		logger.info("Checking requested reasoner is available");
+		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 
 		logger.info("Building existingTaxonomy");
 		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
@@ -134,7 +135,6 @@ public class SnomedReasonerService {
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
-		OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createReasoner(owlOntology, configuration);
 
 		logger.info("OwlReasoner inferring class hierarchy");
@@ -161,6 +161,18 @@ public class SnomedReasonerService {
 		logger.info("{} seconds total", (new Date().getTime() - startDate.getTime())/1000f);
 
 		return resultsRf2Archive;
+	}
+
+	private OWLReasonerFactory getOWLReasonerFactory(String reasonerFactoryClassName) throws ReasonerServiceException {
+		Class<?> reasonerFactoryClass = null;
+		try {
+			reasonerFactoryClass = Class.forName(reasonerFactoryClassName);
+			return (OWLReasonerFactory) reasonerFactoryClass.newInstance();
+		} catch (ClassNotFoundException e) {
+			throw new ReasonerServiceException(String.format("Requested reasoner class '%s' not found.", reasonerFactoryClassName), e);
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new ReasonerServiceException(String.format("An instance of requested reasoner '%s' could not be created.", reasonerFactoryClass), e);
+		}
 	}
 
 	private void serialiseOntologyForDebug(OWLOntology ontology) {
