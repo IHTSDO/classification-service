@@ -1,8 +1,7 @@
 package org.snomed.otf.reasoner.server;
 
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
@@ -11,22 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
@@ -44,30 +36,6 @@ public class Application {
 
 	public static void main(String[] args) throws OWLOntologyCreationException {
 		SpringApplication.run(Application.class, args);
-	}
-
-	public static void mainDiff(String[] args) throws OWLOntologyCreationException {
-		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-		OWLOntology owlOntology1 = manager.loadOntologyFromOntologyDocument(new File("debug/classificationMap/6.owl"));
-		OWLOntology owlOntology2 = manager.loadOntologyFromOntologyDocument(new File("debug/classificationMap/1.owl"));
-
-		Set<OWLAxiom> axioms1 = owlOntology1.getAxioms();
-		Set<OWLAxiom> axioms2 = owlOntology2.getAxioms();
-
-		Map<AxiomType, AtomicInteger> foundTypeCount = new HashMap<>();
-		Map<AxiomType, AtomicInteger> missingTypeCount = new HashMap<>();
-		for (OWLAxiom owlAxiom1 : axioms1) {
-			if (axioms2.contains(owlAxiom1)) {
-				foundTypeCount.computeIfAbsent(owlAxiom1.getAxiomType(), t -> new AtomicInteger()).incrementAndGet();
-			} else {
-				int i = missingTypeCount.computeIfAbsent(owlAxiom1.getAxiomType(), t -> new AtomicInteger()).incrementAndGet();
-				if (i < 100) {
-					System.out.println("Not found - " + owlAxiom1);
-				}
-			}
-		}
-		System.out.println("Found " + foundTypeCount);
-		System.out.println("Missing " + missingTypeCount);
 	}
 
 	// Uncomment for manual classification testing
