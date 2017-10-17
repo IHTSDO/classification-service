@@ -1,9 +1,7 @@
 .*
 /target
-*.iml
 /release
 /testing
-/classification-results
-application-local.properties
-/store
 /debug
+application-*.properties
+*.iml
