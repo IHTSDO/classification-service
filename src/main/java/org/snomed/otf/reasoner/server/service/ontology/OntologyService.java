@@ -73,12 +73,14 @@ public class OntologyService {
 					terms.add(getOwlClass(destinationId));
 				} else if (group == 0) {
 					if (NEVER_GROUPED_ROLE_IDS.contains(typeId)) {
+						// Special cases
 						terms.add(getOwlObjectSomeValuesFrom(typeId, destinationId));
 					} else {
+						// Self grouped relationships in group 0
 						terms.add(getOwlObjectSomeValuesFromGroup(getOwlObjectSomeValuesFrom(typeId, destinationId)));
 					}
 				} else {
-					// Create sets of statements in the same role group
+					// Collect statements in the same role group into sets
 					nonZeroRoleGroups.computeIfAbsent(group, g -> new ExpressionGroup())
 							.addMember(getOwlObjectSomeValuesFrom(typeId, destinationId));
 					if (typeId == Concepts.HAS_ACTIVE_INGREDIENT_LONG) {
@@ -92,9 +94,12 @@ public class OntologyService {
 				ExpressionGroup expressionGroup = nonZeroRoleGroups.get(group);
 				Set<OWLClassExpression> groupTerms = expressionGroup.getMembers();
 				if (expressionGroup.getHasActiveIngredientClassExpression() != null) {
+					// If one of the relationships in the group has the type Has Active Ingredient we use roleHasMeasurement rather than roleGroup
 					terms.add(getOwlObjectSomeValuesWithPrefix(SNOMED_ROLE_HAS_MEASUREMENT, getOnlyValueOrIntersection(groupTerms)));
+					// Repeat the Has Active Ingredient expression outside of the roleHasMeasurement expression
 					terms.add(expressionGroup.getHasActiveIngredientClassExpression());
 				} else {
+					// Write out a group of expressions
 					terms.add(getOwlObjectSomeValuesFromGroup(getOnlyValueOrIntersection(groupTerms)));
 				}
 			}
