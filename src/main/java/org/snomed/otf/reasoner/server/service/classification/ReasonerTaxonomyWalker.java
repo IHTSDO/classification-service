@@ -65,7 +65,7 @@ public class ReasonerTaxonomyWalker {
 			final Node<OWLClass> currentNode = nodesToProcess.removeFirst();
 			final NodeSet<OWLClass> nextNodeSet = walk(currentNode);
 
-			if (!EMPTY_NODE_SET.equals(nextNodeSet)) {
+			if (!nextNodeSet.isEmpty()) {
 				nodesToProcess.addAll(nextNodeSet.getNodes());
 			}
 
@@ -81,7 +81,7 @@ public class ReasonerTaxonomyWalker {
 	private NodeSet<OWLClass> walk(final Node<OWLClass> node) {
 
 		if (isNodeProcessed(node)) {
-			return node.isTopNode() ? reasoner.getSubClasses(node.getRepresentativeElement(), true) : EMPTY_NODE_SET;
+			return reasoner.getSubClasses(node.getRepresentativeElement(), true);
 		}
 
 		// Check first if we are at the bottom node, as all OWL classes are superclasses of Nothing
@@ -193,15 +193,11 @@ public class ReasonerTaxonomyWalker {
 	}
 
 	private boolean isConceptClass(final OWLClass owlClass) {
-		return hasPrefix(owlClass, OntologyService.SNOMED_CONCEPT);
-	}
-
-	private boolean hasPrefix(final OWLClass owlClass, final String prefix) {
-		return prefixManager.getShortForm(owlClass.getIRI()).startsWith(prefix);
+		return prefixManager.getShortForm(owlClass.getIRI()).startsWith(OntologyService.SNOMED_CONCEPT);
 	}
 
 	private long getConceptId(final OWLClass owlClass) {
-		final String strippedShortForm = prefixManager.getShortForm(owlClass.getIRI()).substring(OntologyService.SNOMED.length());
-		return Long.parseLong(strippedShortForm.split("_")[1]);
+		String shortForm = prefixManager.getShortForm(owlClass.getIRI());
+		return Long.parseLong(shortForm.substring(shortForm.indexOf("_") + 1, shortForm.length()));
 	}
 }

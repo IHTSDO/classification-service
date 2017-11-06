@@ -9,6 +9,7 @@ import org.snomed.otf.reasoner.server.service.data.StatementFragment;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -147,5 +148,9 @@ public class OntologyService {
 
 	private OWLClass getOwlClass(Long conceptId) {
 		return factory.getOWLClass(SNOMED_CONCEPT + conceptId, prefixManager);
+	}
+
+	public DefaultPrefixManager getPrefixManager() {
+		return prefixManager;
 	}
 }

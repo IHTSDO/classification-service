@@ -128,10 +128,11 @@ public class SnomedReasonerService {
 		existingTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
-		OWLOntology owlOntology = new OntologyService().createOntology(existingTaxonomy);
+		OntologyService ontologyService = new OntologyService();
+		OWLOntology owlOntology = ontologyService.createOntology(existingTaxonomy);
 
 		// Uncomment for debugging
-		// serialiseOntologyForDebug(owlOntology);
+//		serialiseOntologyForDebug(owlOntology);
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
@@ -144,7 +145,7 @@ public class SnomedReasonerService {
 		logger.info("{} seconds so far", (new Date().getTime() - startDate.getTime())/1000f);
 
 		logger.info("Extract ReasonerTaxonomy");
-		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), new DefaultPrefixManager());
+		ReasonerTaxonomyWalker walker = new ReasonerTaxonomyWalker(reasoner, new ReasonerTaxonomy(), ontologyService.getPrefixManager());
 		ReasonerTaxonomy reasonerTaxonomy = walker.walk();
 
 		logger.info("Generate normal form");
