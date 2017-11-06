@@ -10,6 +10,7 @@ public class Concepts {
 	public static final Long IS_A_LONG = parseLong(IS_A);
 
 	public static final String FULLY_DEFINED = "900000000000073002";
+	public static final String PRIMITIVE = "900000000000074008";
 	public static final String EXISTENTIAL_RESTRICTION_MODIFIER = "900000000000451002";
 	public static final String UNIVERSAL_RESTRICTION_MODIFIER = "900000000000452009";
 
