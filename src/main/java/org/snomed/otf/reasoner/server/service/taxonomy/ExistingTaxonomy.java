@@ -2,6 +2,7 @@ package org.snomed.otf.reasoner.server.service.taxonomy;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import org.semanticweb.owlapi.model.OWLAxiom;
 import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.ConcreteDomainFragment;
@@ -20,8 +21,10 @@ public class ExistingTaxonomy {
 	private Set<Long> fullyDefinedConceptIds = new LongOpenHashSet();
 	private Map<Long, StatementFragment> statedFragmentsById = new HashMap<>();
 	private Map<Long, StatementFragment> inferredFragmentsById = new HashMap<>();
+	private Map<String, OWLAxiom> axiomsById = new HashMap<>();
 	private Map<Long, Set<StatementFragment>> conceptStatedFragmentMap = new Long2ObjectOpenHashMap<>();
 	private Map<Long, Set<StatementFragment>> conceptInferredFragmentMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, Set<OWLAxiom>> conceptAxiomMap = new Long2ObjectOpenHashMap<>();
 	private Map<Long, Set<Long>> statedSubTypesMap = new Long2ObjectOpenHashMap<>();
 
 	public boolean isPrimitive(Long conceptId) {
@@ -205,5 +208,22 @@ public class ExistingTaxonomy {
 			getInferredFragments(parseLong(sourceId)).removeIf(fragment -> fragmentId == fragment.getStatementId());
 			inferredFragmentsById.remove(fragmentId);
 		}
+	}
+
+	public void addAxiom(String referencedComponentId, String axiomId, OWLAxiom owlAxiom) {
+		conceptAxiomMap.computeIfAbsent(parseLong(referencedComponentId), id -> new HashSet<>()).add(owlAxiom);
+		axiomsById.put(axiomId, owlAxiom);
+	}
+
+	public void removeAxiom(String referencedComponentId, String id) {
+		// Find the previously loaded axiom by id so that it can be removed from the set of axioms on the concept
+		OWLAxiom owlAxiomToRemove = axiomsById.remove(id);
+		if (owlAxiomToRemove != null) {
+			conceptAxiomMap.get(parseLong(referencedComponentId)).remove(owlAxiomToRemove);
+		}
+	}
+
+	public Map<Long, Set<OWLAxiom>> getConceptAxiomMap() {
+		return conceptAxiomMap;
 	}
 }

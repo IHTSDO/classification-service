@@ -114,6 +114,12 @@ public class OntologyService {
 			} else {
 				axioms.add(factory.getOWLEquivalentClassesAxiom(conceptClass, getOnlyValueOrIntersection(terms)));
 			}
+
+			// Add raw axioms from the axiom reference set file
+			Set<OWLAxiom> conceptAxioms = existingTaxonomy.getConceptAxiomMap().get(conceptId);
+			if (conceptAxioms != null) {
+				axioms.addAll(conceptAxioms);
+			}
 		}
 
 		return manager.createOntology(axioms, IRI.create(SNOMED_IRI));

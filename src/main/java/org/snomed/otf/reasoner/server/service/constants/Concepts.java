@@ -18,6 +18,7 @@ public class Concepts {
 	public static final String STATED_RELATIONSHIP = "900000000000010007";
 	public static final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	public static final String DEFINING_RELATIONSHIP = "900000000000006009";
+	public static final String OWL_AXIOM_REFERENCE_SET = "733073007";
 
 	// Concepts that require special care when classifying
 	public static final String CONCEPT_MODEL_ATTRIBUTE = "410662002";

@@ -9,6 +9,8 @@ import org.springframework.util.StopWatch;
 
 import java.io.InputStream;
 
+import static org.snomed.otf.reasoner.server.service.constants.Concepts.OWL_AXIOM_REFERENCE_SET;
+
 public class ExistingTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
@@ -16,6 +18,7 @@ public class ExistingTaxonomyBuilder {
 	private static final LoadingProfile SNAPSHOT_LOADING_PROFILE = new LoadingProfile()
 			.withStatedRelationships()
 			.withFullRelationshipObjects()
+			.withRefset(OWL_AXIOM_REFERENCE_SET)
 			.withoutDescriptions();
 	
 	private static final LoadingProfile DELTA_LOADING_PROFILE = SNAPSHOT_LOADING_PROFILE
