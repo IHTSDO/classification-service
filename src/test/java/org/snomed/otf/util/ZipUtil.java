@@ -2,17 +2,16 @@ package org.snomed.otf.util;
 
 import org.springframework.util.StreamUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class ZipUtil {
@@ -37,5 +36,17 @@ public class ZipUtil {
 			});
 		}
 		return zipFile;
+	}
+
+	public static InputStream getZipEntryStreamOrThrow(File file, String filenamePart) throws IOException {
+		ZipFile zipFile = new ZipFile(file);
+		Enumeration<? extends ZipEntry> entries = zipFile.entries();
+		while (entries.hasMoreElements()) {
+			ZipEntry entry = entries.nextElement();
+			if (entry.getName().contains(filenamePart)) {
+				return zipFile.getInputStream(entry);
+			}
+		}
+		throw new FileNotFoundException("No zip file entry found matching filename part '" + filenamePart + "'");
 	}
 }
