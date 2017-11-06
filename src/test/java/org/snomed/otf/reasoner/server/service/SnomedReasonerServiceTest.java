@@ -33,8 +33,8 @@ public class SnomedReasonerServiceTest {
 
 	@Test
 	public void testClassifyBase() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
-		File baseRF2SnapshotZip = ZipUtil.zipDirectory("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
-		File emptyDeltaZip = ZipUtil.zipDirectory("src/test/resources/SnomedCT_MiniRF2_Empty_delta");
+		File baseRF2SnapshotZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
+		File emptyDeltaZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Empty_delta");
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
@@ -47,8 +47,8 @@ public class SnomedReasonerServiceTest {
 
 	@Test
 	public void testClassifyNewConcept() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
-		File baseRF2SnapshotZip = ZipUtil.zipDirectory("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
-		File newDiabetesConceptDeltaZip = ZipUtil.zipDirectory("src/test/resources/SnomedCT_MiniRF2_Add_Diabetes_delta");
+		File baseRF2SnapshotZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
+		File newDiabetesConceptDeltaZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Add_Diabetes_delta");
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
