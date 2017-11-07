@@ -1,6 +1,7 @@
 package org.snomed.otf.reasoner.server.service.taxonomy;
 
 import com.google.common.base.Strings;
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.ImpotentComponentFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.StringDocumentSource;
@@ -28,13 +29,16 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	private int effectiveTimeNow = Integer.parseInt(new SimpleDateFormat("yyyyMMdd").format(new Date()));
 	private final OWLOntologyManager owlOntologyManager;
 
+	private boolean stop = false;
+	private Exception owlParsingExceptionThrown;
+	private String owlParsingExceptionMemberId;
+
 	public ExistingTaxonomyLoader() {
 		owlOntologyManager = OWLManager.createOWLOntologyManager();
 	}
 
 	@Override
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
-
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
 			existingTaxonomy.getAllConceptIds().add(id);
@@ -94,20 +98,28 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 
 	@Override
 	public void newReferenceSetMemberState(String[] fieldNames, String id, String effectiveTime, String active, String moduleId, String refsetId, String referencedComponentId, String... otherValues) {
-		if (refsetId.equals(Concepts.OWL_AXIOM_REFERENCE_SET)) {
+		if (refsetId.equals(Concepts.OWL_AXIOM_REFERENCE_SET) && owlParsingExceptionThrown == null) {
 			if (ACTIVE.equals(active)) {
 				try {
 					String owlExpressionString = otherValues[0];
 					OWLAxiom owlAxiom = deserialiseAxiom(owlExpressionString, id);
 					existingTaxonomy.addAxiom(referencedComponentId, id, owlAxiom);
-				} catch (OWLOntologyCreationException e) {
-					e.printStackTrace();
+				} catch (OWLException | OWLRuntimeException e) {
+					owlParsingExceptionThrown = e;
+					owlParsingExceptionMemberId = id;
 				}
 			} else {
 				// Remove the axiom from our active set
 				// Match by id rather than a deserialised representation because the equals method may fail.
 				existingTaxonomy.removeAxiom(referencedComponentId, id);
 			}
+		}
+	}
+
+	void reportErrors() throws ReleaseImportException {
+		if (owlParsingExceptionThrown != null) {
+			throw new ReleaseImportException("Failed to parse OWL Axiom in reference set member '" + owlParsingExceptionMemberId + "'",
+					owlParsingExceptionThrown);
 		}
 	}
 
@@ -129,5 +141,4 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	public void startLoadingDelta() {
 		loadingDelta = true;
 	}
-
 }

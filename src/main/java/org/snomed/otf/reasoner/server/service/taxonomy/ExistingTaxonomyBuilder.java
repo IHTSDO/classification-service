@@ -38,6 +38,7 @@ public class ExistingTaxonomyBuilder {
 				snomedRf2SnapshotArchive,
 				SNAPSHOT_LOADING_PROFILE,
 				existingTaxonomyLoader);
+		existingTaxonomyLoader.reportErrors();
 		logger.info("Loaded previous release snapshot");
 
 		existingTaxonomyLoader.startLoadingDelta();
@@ -46,6 +47,7 @@ public class ExistingTaxonomyBuilder {
 				currentReleaseRf2DeltaArchive,
 				DELTA_LOADING_PROFILE,
 				existingTaxonomyLoader);
+		existingTaxonomyLoader.reportErrors();
 		logger.info("Loaded current release delta");
 
 		stopWatch.stop();
