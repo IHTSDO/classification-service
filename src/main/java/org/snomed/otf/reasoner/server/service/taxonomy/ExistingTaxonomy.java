@@ -104,7 +104,7 @@ public class ExistingTaxonomy {
 		}
 
 		// Check all ancestors for the attribute concept
-		for (StatementFragment statementFragment : conceptStatedFragmentMap.get(conceptId)) {
+		for (StatementFragment statementFragment : conceptStatedFragmentMap.getOrDefault(conceptId, Collections.emptySet())) {
 			if (statementFragment.getTypeId() == Concepts.IS_A_LONG) {
 				return statementFragment.getDestinationId() == ancestor || conceptHasAncestor(statementFragment.getDestinationId(), ancestor, ++depth);
 			}

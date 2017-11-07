@@ -14,17 +14,19 @@ import static org.snomed.otf.reasoner.server.service.constants.Concepts.OWL_AXIO
 public class ExistingTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	private static final LoadingProfile SNAPSHOT_LOADING_PROFILE = new LoadingProfile()
 			.withStatedRelationships()
 			.withFullRelationshipObjects()
 			.withRefset(OWL_AXIOM_REFERENCE_SET)
+			.withFullRefsetMemberObjects()
 			.withoutDescriptions();
-	
+
 	private static final LoadingProfile DELTA_LOADING_PROFILE = SNAPSHOT_LOADING_PROFILE
-			.withInactiveConcepts()  //The delta needs to be able to inactivate previously active concepts
-			.withInactiveRelationships();  //The delta needs to be able to inactivate previously active relationships
-	
+			.withInactiveConcepts() // The delta needs to be able to inactivate previously active components
+			.withInactiveRelationships()
+			.withInactiveRefsetMembers();
+
 	public ExistingTaxonomy build(InputStream snomedRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
