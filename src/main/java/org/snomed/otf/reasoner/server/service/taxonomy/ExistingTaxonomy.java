@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.snomed.otf.reasoner.server.service.ReasonerServiceException;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
-import org.snomed.otf.reasoner.server.service.data.ConcreteDomainFragment;
 import org.snomed.otf.reasoner.server.service.data.StatementFragment;
 
 import java.io.*;
@@ -29,11 +28,6 @@ public class ExistingTaxonomy {
 
 	public boolean isPrimitive(Long conceptId) {
 		return !fullyDefinedConceptIds.contains(conceptId);
-	}
-
-	public Collection<ConcreteDomainFragment> getConceptConcreteDomainFragments(Long conceptId) {
-		// Later: Collect concrete domain members
-		return Collections.emptySet();
 	}
 
 	/**
@@ -71,11 +65,6 @@ public class ExistingTaxonomy {
 				inferredFragmentsById.put(statementFragment.getStatementId(), statementFragment);
 			}
 		}
-	}
-
-	public Collection<ConcreteDomainFragment> getStatementConcreteDomainFragments(long statementId) {
-		// Later: Collect relationship concrete domain members
-		return Collections.emptySet();
 	}
 
 	// TODO: Replace this - just collect the attributes used in active relationships
