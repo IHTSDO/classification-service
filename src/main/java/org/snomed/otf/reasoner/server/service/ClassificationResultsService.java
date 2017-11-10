@@ -1,7 +1,7 @@
 package org.snomed.otf.reasoner.server.service;
 
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
-import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.data.Relationship;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeCollector;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +41,7 @@ class ClassificationResultsService {
 		return outputFile;
 	}
 
-	private void writeRelationshipChanges(BufferedWriter writer, Map<Long, Set<StatementFragment>> addedStatements, Map<Long, Set<StatementFragment>> removedStatements) throws IOException {
+	private void writeRelationshipChanges(BufferedWriter writer, Map<Long, Set<Relationship>> addedStatements, Map<Long, Set<Relationship>> removedStatements) throws IOException {
 		// Write header
 		writer.write(RELATIONSHIPS_HEADER);
 		writer.newLine();
@@ -50,14 +50,14 @@ class ClassificationResultsService {
 		for (Long sourceId : addedStatements.keySet()) {
 			String relationshipId = "";
 			String active = "1";
-			for (StatementFragment statementFragment : addedStatements.get(sourceId)) {
+			for (Relationship relationship : addedStatements.get(sourceId)) {
 				writeRelationship(writer,
 						relationshipId,
 						active,
 						sourceId,
-						statementFragment.getDestinationId(),
-						statementFragment.getGroup(),
-						statementFragment.getTypeId(),
+						relationship.getDestinationId(),
+						relationship.getGroup(),
+						relationship.getTypeId(),
 						Concepts.EXISTENTIAL_RESTRICTION_MODIFIER);
 			}
 		}
@@ -65,14 +65,14 @@ class ClassificationResultsService {
 		// Write redundant relationships
 		for (Long sourceId : removedStatements.keySet()) {
 			String active = "0";
-			for (StatementFragment statementFragment : removedStatements.get(sourceId)) {
+			for (Relationship relationship : removedStatements.get(sourceId)) {
 				writeRelationship(writer,
-						statementFragment.getStatementId() + "",
+						relationship.getRelationshipId() + "",
 						active,
 						sourceId,
-						statementFragment.getDestinationId(),
-						statementFragment.getGroup(),
-						statementFragment.getTypeId(),
+						relationship.getDestinationId(),
+						relationship.getGroup(),
+						relationship.getTypeId(),
 						Concepts.EXISTENTIAL_RESTRICTION_MODIFIER);
 			}
 		}

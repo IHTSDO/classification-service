@@ -54,7 +54,7 @@ import com.google.common.collect.Maps.EntryTransformer;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
-import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.data.Relationship;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
 
 /**
@@ -63,7 +63,7 @@ import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
  *
  * @author law223 - initial implementation in Snorocket's SNOMED API
  */
-public final class RelationshipNormalFormGenerator extends NormalFormGenerator<StatementFragment> {
+public final class RelationshipNormalFormGenerator extends NormalFormGenerator<Relationship> {
 
 	/**
 	 * Represents any item in an ontology which can be compared for
@@ -356,7 +356,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 	 */
 	private final class RelationshipFragment implements SemanticComparable<RelationshipFragment> {
 
-		private final StatementFragment fragment;
+		private final Relationship fragment;
 
 		/**
 		 * Creates a new relationship fragment from the specified relationship.
@@ -368,7 +368,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		 * @throws NullPointerException
 		 *             if the given relationship is <code>null</code>
 		 */
-		public RelationshipFragment(final StatementFragment fragment) {
+		public RelationshipFragment(final Relationship fragment) {
 			this.fragment = checkNotNull(fragment, "fragment");
 		}
 
@@ -392,7 +392,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 
 
 		public long getStatementId() {
-			return fragment.getStatementId();
+			return fragment.getRelationshipId();
 		}
 
 
@@ -657,7 +657,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 
 	private static final int ZERO_GROUP = 0;
 
-	private final Map<Long, Collection<StatementFragment>> generatedNonIsACache = new Long2ObjectOpenHashMap<>();
+	private final Map<Long, Collection<Relationship>> generatedNonIsACache = new Long2ObjectOpenHashMap<>();
 
 	/**
 	 * Creates a new distribution normal form generator instance.
@@ -669,8 +669,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 	}
 
 	@Override
-	public Collection<StatementFragment> getExistingComponents(final long conceptId) {
-		return existingTaxonomy.getInferredStatementFragments(conceptId);
+	public Collection<Relationship> getExistingComponents(final long conceptId) {
+		return existingTaxonomy.getInferredRelationships(conceptId);
 	}
 
 	/**
@@ -702,14 +702,14 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 	 * @return a collection of outbound relationships for the specified concept in distribution normal form
 	 */
 	@Override
-	public Collection<StatementFragment> getGeneratedComponents(final long conceptId) {
+	public Collection<Relationship> getGeneratedComponents(final long conceptId) {
 		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
 
 		// Step 1: create IS-A relationships
-		final Iterable<StatementFragment> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
+		final Iterable<Relationship> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
 
 		// Step 2: get all non IS-A relationships from ancestors and remove redundancy, then cache the results for later use
-		final Map<Long, Collection<StatementFragment>> otherNonIsAFragments = new Long2ObjectOpenHashMap<>();
+		final Map<Long, Collection<Relationship>> otherNonIsAFragments = new Long2ObjectOpenHashMap<>();
 
 		/* 
 		 * We can rely on the fact that the tree is processed in breadth-first order, so the parents' non-IS A relationships
@@ -719,13 +719,13 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 			otherNonIsAFragments.put(directSuperTypeId, getCachedNonIsAFragments(directSuperTypeId));
 		}
 
-		final Collection<StatementFragment> ownStatedNonIsaFragments = existingTaxonomy.getNonIsAFragments(conceptId);
-		final Collection<StatementFragment> ownInferredFragments = existingTaxonomy.getInferredStatementFragments(conceptId);
-		final Collection<StatementFragment> ownInferredNonIsaFragments = Collections2.filter(ownInferredFragments, input -> input.getTypeId() != IS_A_LONG);
+		final Collection<Relationship> ownStatedNonIsaRelationships = existingTaxonomy.getNonIsARelationships(conceptId);
+		final Collection<Relationship> ownInferredFragments = existingTaxonomy.getInferredRelationships(conceptId);
+		final Collection<Relationship> ownInferredNonIsaFragments = Collections2.filter(ownInferredFragments, input -> input.getTypeId() != IS_A_LONG);
 
-		final Iterable<StatementFragment> inferredNonIsAFragments = getInferredNonIsAFragments(conceptId, 
+		final Iterable<Relationship> inferredNonIsAFragments = getInferredNonIsAFragments(conceptId,
 				ownInferredNonIsaFragments, 
-				ownStatedNonIsaFragments,
+				ownStatedNonIsaRelationships,
 				otherNonIsAFragments);
 
 		// Place results in the cache, so children can re-use it
@@ -735,18 +735,18 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return ImmutableList.copyOf(Iterables.concat(inferredIsAFragments, inferredNonIsAFragments));
 	}
 
-	private Collection<StatementFragment> getCachedNonIsAFragments(final long directSuperTypeId) {
+	private Collection<Relationship> getCachedNonIsAFragments(final long directSuperTypeId) {
 		return generatedNonIsACache.get(directSuperTypeId);
 	}
 
-	private Iterable<StatementFragment> getInferredIsAFragments(final long conceptId, final Set<Long> parentIds) {
-		return parentIds.stream().map(parentId -> new StatementFragment(IS_A_LONG, parentId)).collect(Collectors.toSet());
+	private Iterable<Relationship> getInferredIsAFragments(final long conceptId, final Set<Long> parentIds) {
+		return parentIds.stream().map(parentId -> new Relationship(IS_A_LONG, parentId)).collect(Collectors.toSet());
 	}
 
-	private Iterable<StatementFragment> getInferredNonIsAFragments(final long sourceId,
-			final Collection<StatementFragment> ownInferredNonIsAFragments,
-			final Collection<StatementFragment> ownStatedNonIsAFragments,
-			final Map<Long, Collection<StatementFragment>> parentStatedNonIsAFragments) {
+	private Iterable<Relationship> getInferredNonIsAFragments(final long sourceId,
+															  final Collection<Relationship> ownInferredNonIsAFragments,
+															  final Collection<Relationship> ownStatedNonIsAFragments,
+															  final Map<Long, Collection<Relationship>> parentStatedNonIsAFragments) {
 
 		// Index existing inferred non-IS A relationship groups into a GroupSet (without redundancy check)
 		final GroupSet inferredGroups = new GroupSet();
@@ -776,19 +776,19 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return fromGroupSet(groups);
 	}
 
-	private Iterable<Group> toGroups(final boolean preserveNumbers, final Collection<StatementFragment> nonIsARelationshipFragments) {
+	private Iterable<Group> toGroups(final boolean preserveNumbers, final Collection<Relationship> nonIsARelationshipFragments) {
 
-		final Map<Integer, Collection<StatementFragment>> relationshipsByGroupId = Multimaps.index(nonIsARelationshipFragments, new Function<StatementFragment, Integer>() {
+		final Map<Integer, Collection<Relationship>> relationshipsByGroupId = Multimaps.index(nonIsARelationshipFragments, new Function<Relationship, Integer>() {
 			@Override
-			public Integer apply(final StatementFragment input) {
+			public Integer apply(final Relationship input) {
 				return input.getGroup();
 			}
 		}).asMap();
 
 		final Collection<Collection<Group>> groups = Maps.transformEntries(relationshipsByGroupId, 
-				new EntryTransformer<Integer, Collection<StatementFragment>, Collection<Group>>() {
+				new EntryTransformer<Integer, Collection<Relationship>, Collection<Group>>() {
 			@Override
-			public Collection<Group> transformEntry(final Integer key, final Collection<StatementFragment> values) {
+			public Collection<Group> transformEntry(final Integer key, final Collection<Relationship> values) {
 				final Iterable<UnionGroup> unionGroups = toUnionGroups(preserveNumbers, values);
 				final Iterable<UnionGroup> disjointUnionGroups = getDisjointComparables(unionGroups);
 
@@ -824,18 +824,18 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return group;
 	}
 
-	private Iterable<UnionGroup> toUnionGroups(final boolean preserveNumbers, final Collection<StatementFragment> values) {
-		final Map<Integer, Collection<StatementFragment>> relationshipsByUnionGroupId = Multimaps.index(values, new Function<StatementFragment, Integer>() {
+	private Iterable<UnionGroup> toUnionGroups(final boolean preserveNumbers, final Collection<Relationship> values) {
+		final Map<Integer, Collection<Relationship>> relationshipsByUnionGroupId = Multimaps.index(values, new Function<Relationship, Integer>() {
 			@Override
-			public Integer apply(final StatementFragment input) {
+			public Integer apply(final Relationship input) {
 				return input.getUnionGroup();
 			}
 		}).asMap();
 
 		final Collection<Collection<UnionGroup>> unionGroups = Maps.transformEntries(relationshipsByUnionGroupId, 
-				new EntryTransformer<Integer, Collection<StatementFragment>, Collection<UnionGroup>>() {
+				new EntryTransformer<Integer, Collection<Relationship>, Collection<UnionGroup>>() {
 			@Override
-			public Collection<UnionGroup> transformEntry(final Integer key, final Collection<StatementFragment> values) {
+			public Collection<UnionGroup> transformEntry(final Integer key, final Collection<Relationship> values) {
 				if (key == 0) {
 					// Relationships in union group 0 form separate union groups
 					return ImmutableList.copyOf(toZeroUnionGroups(values));
@@ -849,10 +849,10 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return Iterables.concat(unionGroups);
 	}
 
-	private Iterable<UnionGroup> toZeroUnionGroups(final Collection<StatementFragment> values) {
-		return FluentIterable.from(values).transform(new Function<StatementFragment, UnionGroup>() {
+	private Iterable<UnionGroup> toZeroUnionGroups(final Collection<Relationship> values) {
+		return FluentIterable.from(values).transform(new Function<Relationship, UnionGroup>() {
 			@Override
-			public UnionGroup apply(final StatementFragment input) {
+			public UnionGroup apply(final Relationship input) {
 				final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(input)));
 				unionGroup.setUnionGroupNumber(ZERO_GROUP); 
 				return unionGroup;
@@ -860,10 +860,10 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		});
 	}
 
-	private UnionGroup toNonZeroUnionGroup(final boolean preserveNumbers, final int unionGroupNumber, final Collection<StatementFragment> values) {
-		final Iterable<RelationshipFragment> fragments = FluentIterable.from(values).transform(new Function<StatementFragment, RelationshipFragment>() {
+	private UnionGroup toNonZeroUnionGroup(final boolean preserveNumbers, final int unionGroupNumber, final Collection<Relationship> values) {
+		final Iterable<RelationshipFragment> fragments = FluentIterable.from(values).transform(new Function<Relationship, RelationshipFragment>() {
 			@Override
-			public RelationshipFragment apply(final StatementFragment input) {
+			public RelationshipFragment apply(final Relationship input) {
 				return new RelationshipFragment(input);
 			}
 		});
@@ -932,18 +932,18 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 		return candidates;
 	}
 
-	private Set<StatementFragment> fromGroupSet(final GroupSet groups) {
+	private Set<Relationship> fromGroupSet(final GroupSet groups) {
 		return groups.stream().map(this::fromGroup).flatMap(Collection::stream).collect(Collectors.toSet());
 	}
 
-	private Set<StatementFragment> fromGroup(final Group group) {
+	private Set<Relationship> fromGroup(final Group group) {
 		return group.getUnionGroups().stream().map(unionGroup ->  fromUnionGroup(unionGroup, group.getGroupNumber(), unionGroup.getUnionGroupNumber()))
 				.flatMap(Collection::stream).collect(Collectors.toSet());
 	}
 
-	private Set<StatementFragment> fromUnionGroup(final UnionGroup unionGroup, final int groupNumber, final int unionGroupNumber) {
+	private Set<Relationship> fromUnionGroup(final UnionGroup unionGroup, final int groupNumber, final int unionGroupNumber) {
 		return unionGroup.getRelationshipFragments().stream()
-				.map(input -> new StatementFragment(
+				.map(input -> new Relationship(
 						input.getStatementId(),
 						-1,
 						-1,
@@ -957,7 +957,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<S
 				.collect(Collectors.toSet());
 	}
 
-	public final int collectNormalFormChanges(final OntologyChangeProcessor<StatementFragment> processor) {
+	public final int collectNormalFormChanges(final OntologyChangeProcessor<Relationship> processor) {
 		LOGGER.info(">>> Relationship normal form generation");
 		final Stopwatch stopwatch = Stopwatch.createStarted();
 		final int results = collectNormalFormChanges(processor, StatementFragmentOrdering.INSTANCE);

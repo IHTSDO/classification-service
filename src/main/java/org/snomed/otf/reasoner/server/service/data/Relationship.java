@@ -2,9 +2,9 @@ package org.snomed.otf.reasoner.server.service.data;
 
 import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
 
-public class StatementFragment implements SnomedConstants {
+public class Relationship {
 
-	private final long statementId;
+	private final long relationshipId;
 	private int effectiveTime;
 	private final long moduleId;
 	private final long typeId;
@@ -13,23 +13,23 @@ public class StatementFragment implements SnomedConstants {
 	private final int unionGroup;
 	private final boolean universal;
 	private final boolean destinationNegated;
-	private CharacteristicType characteristicType;
+	private SnomedConstants.CharacteristicType characteristicType;
 
-	public StatementFragment(final long typeId, final long destinationId) {
+	public Relationship(final long typeId, final long destinationId) {
 		this(-1, -1, -1, typeId, destinationId, false, 0, 0, false, null);
 	}
 
-	public StatementFragment(long statementId,
-							 int effectiveTime,
-							 long moduleId,
-							 long typeId,
-							 long destinationId,
-							 boolean destinationNegated,
-							 int group,
-							 int unionGroup,
-							 boolean universal,
-							 CharacteristicType characteristicType) {
-		this.statementId = statementId;
+	public Relationship(long relationshipId,
+						int effectiveTime,
+						long moduleId,
+						long typeId,
+						long destinationId,
+						boolean destinationNegated,
+						int group,
+						int unionGroup,
+						boolean universal,
+						SnomedConstants.CharacteristicType characteristicType) {
+		this.relationshipId = relationshipId;
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.typeId = typeId;
@@ -41,8 +41,8 @@ public class StatementFragment implements SnomedConstants {
 		this.characteristicType = characteristicType;
 	}
 
-	public long getStatementId() {
-		return statementId;
+	public long getRelationshipId() {
+		return relationshipId;
 	}
 
 	public long getTypeId() {
@@ -69,11 +69,11 @@ public class StatementFragment implements SnomedConstants {
 		return destinationNegated;
 	}
 
-	public CharacteristicType getCharacteristicType() {
+	public SnomedConstants.CharacteristicType getCharacteristicType() {
 		return characteristicType;
 	}
 
-	public void setCharacteristicType(CharacteristicType characteristicType) {
+	public void setCharacteristicType(SnomedConstants.CharacteristicType characteristicType) {
 		this.characteristicType = characteristicType;
 	}
 

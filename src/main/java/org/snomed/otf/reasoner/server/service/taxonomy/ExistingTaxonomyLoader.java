@@ -8,7 +8,7 @@ import org.semanticweb.owlapi.io.StringDocumentSource;
 import org.semanticweb.owlapi.model.*;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
-import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.data.Relationship;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -74,10 +74,10 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
 			int effectiveTimeInt = !Strings.isNullOrEmpty(effectiveTime) ? Integer.parseInt(effectiveTime) : effectiveTimeNow;
-			existingTaxonomy.addOrModifyStatementFragment(
+			existingTaxonomy.addOrModifyRelationship(
 					stated,
 					parseLong(sourceId),
-					new StatementFragment(
+					new Relationship(
 							parseLong(id),
 							effectiveTimeInt,
 							parseLong(moduleId),
@@ -92,7 +92,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			);
 		} else if (loadingDelta) {
 			// Inactive relationships in the delta should be removed from the snapshot view
-			existingTaxonomy.removeStatementFragment(stated, sourceId, id);
+			existingTaxonomy.removeRelationship(stated, sourceId, id);
 		}
 	}
 

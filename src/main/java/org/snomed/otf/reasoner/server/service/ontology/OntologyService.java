@@ -5,11 +5,10 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
-import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.data.Relationship;
 import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -52,9 +51,9 @@ public class OntologyService {
 		// Create Axioms of Snomed attributes
 		Set<Long> attributeConceptIds = existingTaxonomy.getAttributeConceptIds();
 		for (Long attributeConceptId : attributeConceptIds) {
-			for (StatementFragment statementFragment : existingTaxonomy.getStatementFragments(attributeConceptId)) {
-				if (statementFragment.getTypeId() == Concepts.IS_A_LONG && statementFragment.getDestinationId() != Concepts.CONCEPT_MODEL_ATTRIBUTE_LONG) {
-					axioms.add(factory.getOWLSubObjectPropertyOfAxiom(getOwlObjectProperty(attributeConceptId), getOwlObjectProperty(statementFragment.getDestinationId())));
+			for (Relationship relationship : existingTaxonomy.getStatedRelationships(attributeConceptId)) {
+				if (relationship.getTypeId() == Concepts.IS_A_LONG && relationship.getDestinationId() != Concepts.CONCEPT_MODEL_ATTRIBUTE_LONG) {
+					axioms.add(factory.getOWLSubObjectPropertyOfAxiom(getOwlObjectProperty(attributeConceptId), getOwlObjectProperty(relationship.getDestinationId())));
 				}
 			}
 		}
@@ -66,10 +65,10 @@ public class OntologyService {
 			// Process all concept's relationships
 			final Set<OWLClassExpression> terms = new HashSet<>();
 			Map<Integer, ExpressionGroup> nonZeroRoleGroups = new TreeMap<>();
-			for (StatementFragment statementFragment : existingTaxonomy.getStatementFragments(conceptId)) {
-				int group = statementFragment.getGroup();
-				long typeId = statementFragment.getTypeId();
-				long destinationId = statementFragment.getDestinationId();
+			for (Relationship relationship : existingTaxonomy.getStatedRelationships(conceptId)) {
+				int group = relationship.getGroup();
+				long typeId = relationship.getTypeId();
+				long destinationId = relationship.getDestinationId();
 				if (typeId == Concepts.IS_A_LONG) {
 					terms.add(getOwlClass(destinationId));
 				} else if (group == 0) {

@@ -18,15 +18,15 @@ package org.snomed.otf.reasoner.server.service.normalform;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Longs;
-import org.snomed.otf.reasoner.server.service.data.StatementFragment;
+import org.snomed.otf.reasoner.server.service.data.Relationship;
 
 /**
- * Compares {@link StatementFragment} instances for change processing. 
+ * Compares {@link Relationship} instances for change processing.
  *
  */
-public final class StatementFragmentOrdering extends Ordering<StatementFragment> {
+public final class StatementFragmentOrdering extends Ordering<Relationship> {
 	
-	public static final Ordering<StatementFragment> INSTANCE = new StatementFragmentOrdering();
+	public static final Ordering<Relationship> INSTANCE = new StatementFragmentOrdering();
 	
 	private StatementFragmentOrdering() {
 		// Prevents instantiation
@@ -37,7 +37,7 @@ public final class StatementFragmentOrdering extends Ordering<StatementFragment>
 	 * @see com.google.common.collect.Ordering#compare(java.lang.Object, java.lang.Object)
 	 */
 	@Override
-	public int compare(final StatementFragment o1, final StatementFragment o2) {
+	public int compare(final Relationship o1, final Relationship o2) {
 
 		final int attributeDelta = Longs.compare(o1.getTypeId(), o2.getTypeId());
 		if (attributeDelta != 0)
