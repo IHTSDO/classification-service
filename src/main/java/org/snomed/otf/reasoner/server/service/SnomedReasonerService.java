@@ -6,7 +6,6 @@ import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
-import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -17,8 +16,8 @@ import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeColle
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
 import org.snomed.otf.reasoner.server.service.ontology.OntologyService;
 import org.snomed.otf.reasoner.server.service.store.FileStoreService;
-import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
-import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomyBuilder;
+import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
+import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -117,19 +116,19 @@ public class SnomedReasonerService {
 		logger.info("Checking requested reasoner is available");
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
 
-		logger.info("Building existingTaxonomy");
-		ExistingTaxonomyBuilder existingTaxonomyBuilder = new ExistingTaxonomyBuilder();
-		ExistingTaxonomy existingTaxonomy = existingTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
+		logger.info("Building snomedTaxonomy");
+		SnomedTaxonomyBuilder snomedTaxonomyBuilder = new SnomedTaxonomyBuilder();
+		SnomedTaxonomy snomedTaxonomy = snomedTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
 
 		//TODO Temporary code to write taxonomy out to disk so we can check if the delta was correctly applied
 		/*File tempDir = Files.createTempDir();
 		logger.info("Saving existing taxonomy to {}", tempDir.getAbsolutePath());
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-		existingTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
+		snomedTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
 		OntologyService ontologyService = new OntologyService();
-		OWLOntology owlOntology = ontologyService.createOntology(existingTaxonomy);
+		OWLOntology owlOntology = ontologyService.createOntology(snomedTaxonomy);
 
 		// Uncomment for debugging
 //		serialiseOntologyForDebug(owlOntology);
@@ -149,7 +148,7 @@ public class SnomedReasonerService {
 		ReasonerTaxonomy reasonerTaxonomy = walker.walk();
 
 		logger.info("Generate normal form");
-		RelationshipNormalFormGenerator normalFormGenerator = new RelationshipNormalFormGenerator(reasonerTaxonomy, existingTaxonomy);
+		RelationshipNormalFormGenerator normalFormGenerator = new RelationshipNormalFormGenerator(reasonerTaxonomy, snomedTaxonomy);
 		RelationshipChangeCollector changeCollector = new RelationshipChangeCollector();
 		normalFormGenerator.collectNormalFormChanges(changeCollector);
 

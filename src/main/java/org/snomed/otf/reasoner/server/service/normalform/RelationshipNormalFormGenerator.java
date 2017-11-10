@@ -55,7 +55,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
-import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
+import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 
 /**
  * Transforms a subsumption hierarchy and a set of non-ISA relationships into
@@ -485,7 +485,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		}
 
 		private boolean isExhaustive(final long conceptId) {
-			return existingTaxonomy.isExhaustive(conceptId);
+			return snomedTaxonomy.isExhaustive(conceptId);
 		}
 
 		/**
@@ -664,13 +664,13 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	 *
 	 * @param reasonerTaxonomy the reasoner to extract results from (may not be {@code null})
 	 */
-	public RelationshipNormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, final ExistingTaxonomy existingTaxonomy) {
-		super(reasonerTaxonomy, existingTaxonomy);
+	public RelationshipNormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, final SnomedTaxonomy snomedTaxonomy) {
+		super(reasonerTaxonomy, snomedTaxonomy);
 	}
 
 	@Override
 	public Collection<Relationship> getExistingComponents(final long conceptId) {
-		return existingTaxonomy.getInferredRelationships(conceptId);
+		return snomedTaxonomy.getInferredRelationships(conceptId);
 	}
 
 	/**
@@ -719,8 +719,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 			otherNonIsAFragments.put(directSuperTypeId, getCachedNonIsAFragments(directSuperTypeId));
 		}
 
-		final Collection<Relationship> ownStatedNonIsaRelationships = existingTaxonomy.getNonIsARelationships(conceptId);
-		final Collection<Relationship> ownInferredFragments = existingTaxonomy.getInferredRelationships(conceptId);
+		final Collection<Relationship> ownStatedNonIsaRelationships = snomedTaxonomy.getNonIsARelationships(conceptId);
+		final Collection<Relationship> ownInferredFragments = snomedTaxonomy.getInferredRelationships(conceptId);
 		final Collection<Relationship> ownInferredNonIsaFragments = Collections2.filter(ownInferredFragments, input -> input.getTypeId() != IS_A_LONG);
 
 		final Iterable<Relationship> inferredNonIsAFragments = getInferredNonIsAFragments(conceptId,
@@ -854,7 +854,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 			@Override
 			public UnionGroup apply(final Relationship input) {
 				final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(input)));
-				unionGroup.setUnionGroupNumber(ZERO_GROUP); 
+				unionGroup.setUnionGroupNumber(ZERO_GROUP);
 				return unionGroup;
 			}
 		});

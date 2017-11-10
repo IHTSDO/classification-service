@@ -11,7 +11,7 @@ import java.io.InputStream;
 
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.OWL_AXIOM_REFERENCE_SET;
 
-public class ExistingTaxonomyBuilder {
+public class SnomedTaxonomyBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -27,34 +27,34 @@ public class ExistingTaxonomyBuilder {
 			.withInactiveRelationships()
 			.withInactiveRefsetMembers();
 
-	public ExistingTaxonomy build(InputStream snomedRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive) throws ReleaseImportException {
+	public SnomedTaxonomy build(InputStream snomedRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive) throws ReleaseImportException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 
-		ExistingTaxonomyLoader existingTaxonomyLoader = new ExistingTaxonomyLoader();
+		SnomedTaxonomyLoader snomedTaxonomyLoader = new SnomedTaxonomyLoader();
 
 		ReleaseImporter releaseImporter = new ReleaseImporter();
 		releaseImporter.loadSnapshotReleaseFiles(
 				snomedRf2SnapshotArchive,
 				SNAPSHOT_LOADING_PROFILE,
-				existingTaxonomyLoader);
-		existingTaxonomyLoader.reportErrors();
+				snomedTaxonomyLoader);
+		snomedTaxonomyLoader.reportErrors();
 		logger.info("Loaded previous release snapshot");
 
-		existingTaxonomyLoader.startLoadingDelta();
+		snomedTaxonomyLoader.startLoadingDelta();
 
 		releaseImporter.loadDeltaReleaseFiles(
 				currentReleaseRf2DeltaArchive,
 				DELTA_LOADING_PROFILE,
-				existingTaxonomyLoader);
-		existingTaxonomyLoader.reportErrors();
+				snomedTaxonomyLoader);
+		snomedTaxonomyLoader.reportErrors();
 		logger.info("Loaded current release delta");
 
 		stopWatch.stop();
-		logger.info("ExistingTaxonomy loaded in {} seconds", stopWatch.getTotalTimeSeconds());
+		logger.info("SnomedTaxonomy loaded in {} seconds", stopWatch.getTotalTimeSeconds());
 
-		ExistingTaxonomy existingTaxonomy = existingTaxonomyLoader.getExistingTaxonomy();
-		logger.info("{} concepts loaded", existingTaxonomy.getAllConceptIds().size());
-		return existingTaxonomy;
+		SnomedTaxonomy snomedTaxonomy = snomedTaxonomyLoader.getSnomedTaxonomy();
+		logger.info("{} concepts loaded", snomedTaxonomy.getAllConceptIds().size());
+		return snomedTaxonomy;
 	}
 }

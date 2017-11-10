@@ -18,9 +18,9 @@ import static java.lang.Long.parseLong;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.STATED_RELATIONSHIP;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.UNIVERSAL_RESTRICTION_MODIFIER;
 
-public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
+public class SnomedTaxonomyLoader extends ImpotentComponentFactory {
 
-	private ExistingTaxonomy existingTaxonomy = new ExistingTaxonomy();
+	private SnomedTaxonomy snomedTaxonomy = new SnomedTaxonomy();
 	private static final String ACTIVE = "1";
 	private static final String ontologyDocStart = "Prefix(:=<http://snomed.info/id/>) Ontology(";
 	private static final String ontologyDocEnd = ")";
@@ -33,7 +33,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	private Exception owlParsingExceptionThrown;
 	private String owlParsingExceptionMemberId;
 
-	public ExistingTaxonomyLoader() {
+	public SnomedTaxonomyLoader() {
 		owlOntologyManager = OWLManager.createOWLOntologyManager();
 	}
 
@@ -41,17 +41,17 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 	public void newConceptState(String conceptId, String effectiveTime, String active, String moduleId, String definitionStatusId) {
 		if (ACTIVE.equals(active)) {
 			long id = parseLong(conceptId);
-			existingTaxonomy.getAllConceptIds().add(id);
+			snomedTaxonomy.getAllConceptIds().add(id);
 			if (Concepts.FULLY_DEFINED.equals(definitionStatusId)) {
-				existingTaxonomy.getFullyDefinedConceptIds().add(id);
+				snomedTaxonomy.getFullyDefinedConceptIds().add(id);
 			} else {
-				existingTaxonomy.getFullyDefinedConceptIds().remove(id);
+				snomedTaxonomy.getFullyDefinedConceptIds().remove(id);
 			}
 		} else if (loadingDelta) {
 			// Inactive concepts in the delta should be removed from the snapshot view
 			long id = parseLong(conceptId);
-			existingTaxonomy.getAllConceptIds().remove(id);
-			existingTaxonomy.getFullyDefinedConceptIds().remove(id);
+			snomedTaxonomy.getAllConceptIds().remove(id);
+			snomedTaxonomy.getFullyDefinedConceptIds().remove(id);
 		}
 	}
 
@@ -74,7 +74,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			// TODO: Destination negated is always false?
 			boolean destinationNegated = false;
 			int effectiveTimeInt = !Strings.isNullOrEmpty(effectiveTime) ? Integer.parseInt(effectiveTime) : effectiveTimeNow;
-			existingTaxonomy.addOrModifyRelationship(
+			snomedTaxonomy.addOrModifyRelationship(
 					stated,
 					parseLong(sourceId),
 					new Relationship(
@@ -92,7 +92,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			);
 		} else if (loadingDelta) {
 			// Inactive relationships in the delta should be removed from the snapshot view
-			existingTaxonomy.removeRelationship(stated, sourceId, id);
+			snomedTaxonomy.removeRelationship(stated, sourceId, id);
 		}
 	}
 
@@ -103,7 +103,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 				try {
 					String owlExpressionString = otherValues[0];
 					OWLAxiom owlAxiom = deserialiseAxiom(owlExpressionString, id);
-					existingTaxonomy.addAxiom(referencedComponentId, id, owlAxiom);
+					snomedTaxonomy.addAxiom(referencedComponentId, id, owlAxiom);
 				} catch (OWLException | OWLRuntimeException e) {
 					owlParsingExceptionThrown = e;
 					owlParsingExceptionMemberId = id;
@@ -111,7 +111,7 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 			} else {
 				// Remove the axiom from our active set
 				// Match by id rather than a deserialised representation because the equals method may fail.
-				existingTaxonomy.removeAxiom(referencedComponentId, id);
+				snomedTaxonomy.removeAxiom(referencedComponentId, id);
 			}
 		}
 	}
@@ -134,8 +134,8 @@ public class ExistingTaxonomyLoader extends ImpotentComponentFactory {
 		return axioms.iterator().next();
 	}
 
-	public ExistingTaxonomy getExistingTaxonomy() {
-		return existingTaxonomy;
+	public SnomedTaxonomy getSnomedTaxonomy() {
+		return snomedTaxonomy;
 	}
 
 	public void startLoadingDelta() {

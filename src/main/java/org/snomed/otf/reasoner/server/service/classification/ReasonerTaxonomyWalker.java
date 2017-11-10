@@ -54,7 +54,7 @@ public class ReasonerTaxonomyWalker {
 	}
 
 	public ReasonerTaxonomy walk() {
-		LOGGER.info(">>> ExistingTaxonomy extraction");
+		LOGGER.info(">>> SnomedTaxonomy extraction");
 
 		final Deque<Node<OWLClass>> nodesToProcess = new LinkedList<>();
 		nodesToProcess.add(reasoner.getTopClassNode());

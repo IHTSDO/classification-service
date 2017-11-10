@@ -6,7 +6,7 @@ import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
-import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
+import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.util.HashSet;
@@ -44,14 +44,14 @@ public class OntologyService {
 		prefixManager.setPrefix(SNOMED, SNOMED_IRI);
 	}
 
-	public OWLOntology createOntology(ExistingTaxonomy existingTaxonomy) throws OWLOntologyCreationException {
+	public OWLOntology createOntology(SnomedTaxonomy snomedTaxonomy) throws OWLOntologyCreationException {
 
 		Set<OWLAxiom> axioms = new HashSet<>();
 
 		// Create Axioms of Snomed attributes
-		Set<Long> attributeConceptIds = existingTaxonomy.getAttributeConceptIds();
+		Set<Long> attributeConceptIds = snomedTaxonomy.getAttributeConceptIds();
 		for (Long attributeConceptId : attributeConceptIds) {
-			for (Relationship relationship : existingTaxonomy.getStatedRelationships(attributeConceptId)) {
+			for (Relationship relationship : snomedTaxonomy.getStatedRelationships(attributeConceptId)) {
 				if (relationship.getTypeId() == Concepts.IS_A_LONG && relationship.getDestinationId() != Concepts.CONCEPT_MODEL_ATTRIBUTE_LONG) {
 					axioms.add(factory.getOWLSubObjectPropertyOfAxiom(getOwlObjectProperty(attributeConceptId), getOwlObjectProperty(relationship.getDestinationId())));
 				}
@@ -59,13 +59,13 @@ public class OntologyService {
 		}
 
 		// Create Axioms of all other Snomed concepts
-		for (Long conceptId : existingTaxonomy.getAllConceptIds()) {
+		for (Long conceptId : snomedTaxonomy.getAllConceptIds()) {
 			OWLClass conceptClass = getOwlClass(conceptId);
 
 			// Process all concept's relationships
 			final Set<OWLClassExpression> terms = new HashSet<>();
 			Map<Integer, ExpressionGroup> nonZeroRoleGroups = new TreeMap<>();
-			for (Relationship relationship : existingTaxonomy.getStatedRelationships(conceptId)) {
+			for (Relationship relationship : snomedTaxonomy.getStatedRelationships(conceptId)) {
 				int group = relationship.getGroup();
 				long typeId = relationship.getTypeId();
 				long destinationId = relationship.getDestinationId();
@@ -109,14 +109,14 @@ public class OntologyService {
 				terms.add(factory.getOWLThing());
 			}
 
-			if (existingTaxonomy.isPrimitive(conceptId)) {
+			if (snomedTaxonomy.isPrimitive(conceptId)) {
 				axioms.add(factory.getOWLSubClassOfAxiom(conceptClass, getOnlyValueOrIntersection(terms)));
 			} else {
 				axioms.add(factory.getOWLEquivalentClassesAxiom(conceptClass, getOnlyValueOrIntersection(terms)));
 			}
 
 			// Add raw axioms from the axiom reference set file
-			Set<OWLAxiom> conceptAxioms = existingTaxonomy.getConceptAxiomMap().get(conceptId);
+			Set<OWLAxiom> conceptAxioms = snomedTaxonomy.getConceptAxiomMap().get(conceptId);
 			if (conceptAxioms != null) {
 				axioms.addAll(conceptAxioms);
 			}

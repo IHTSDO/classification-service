@@ -17,7 +17,7 @@ package org.snomed.otf.reasoner.server.service.normalform;
 
 import com.google.common.collect.Ordering;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
-import org.snomed.otf.reasoner.server.service.taxonomy.ExistingTaxonomy;
+import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,11 +33,11 @@ public abstract class NormalFormGenerator<T> {
 
 	protected final ReasonerTaxonomy reasonerTaxonomy;
 	
-	protected final ExistingTaxonomy existingTaxonomy;
+	protected final SnomedTaxonomy snomedTaxonomy;
 
-	public NormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, ExistingTaxonomy existingTaxonomy) {
+	public NormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, SnomedTaxonomy snomedTaxonomy) {
 		this.reasonerTaxonomy = reasonerTaxonomy;
-		this.existingTaxonomy = existingTaxonomy;
+		this.snomedTaxonomy = snomedTaxonomy;
 	}
 	
 	/**

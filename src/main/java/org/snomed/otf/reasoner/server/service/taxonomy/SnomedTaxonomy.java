@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Long.parseLong;
 
-public class ExistingTaxonomy {
+public class SnomedTaxonomy {
 
 	private Set<Long> allConceptIds = new LongOpenHashSet();
 	private Set<Long> fullyDefinedConceptIds = new LongOpenHashSet();
@@ -145,6 +145,34 @@ public class ExistingTaxonomy {
 		return conceptInferredRelationshipMap.getOrDefault(conceptId, Collections.emptySet());
 	}
 
+	public void removeRelationship(boolean stated, String sourceId, String relationshipIdStr) {
+		long relationshipId = parseLong(relationshipIdStr);
+		if (stated) {
+			getStatedRelationships(parseLong(sourceId)).removeIf(relationship -> relationshipId == relationship.getRelationshipId());
+			statedRelationshipsById.remove(relationshipId);
+		} else {
+			getInferredRelationships(parseLong(sourceId)).removeIf(relationship -> relationshipId == relationship.getRelationshipId());
+			inferredRelationshipsById.remove(relationshipId);
+		}
+	}
+
+	public void addAxiom(String referencedComponentId, String axiomId, OWLAxiom owlAxiom) {
+		conceptAxiomMap.computeIfAbsent(parseLong(referencedComponentId), id -> new HashSet<>()).add(owlAxiom);
+		axiomsById.put(axiomId, owlAxiom);
+	}
+
+	public void removeAxiom(String referencedComponentId, String id) {
+		// Find the previously loaded axiom by id so that it can be removed from the set of axioms on the concept
+		OWLAxiom owlAxiomToRemove = axiomsById.remove(id);
+		if (owlAxiomToRemove != null) {
+			conceptAxiomMap.get(parseLong(referencedComponentId)).remove(owlAxiomToRemove);
+		}
+	}
+
+	public Map<Long, Set<OWLAxiom>> getConceptAxiomMap() {
+		return conceptAxiomMap;
+	}
+
 	public void debugDumpToDisk(File tempDir, String effectiveDate) throws ReasonerServiceException {
 		try {
 			File outputFile = new File(tempDir,  "sct2_StatedRelationship_Snapshot_INT_" + effectiveDate + ".txt");
@@ -173,46 +201,19 @@ public class ExistingTaxonomy {
 				for (Relationship relationship : fragSetEntry.getValue()) {
 					line.setLength(0);
 					line.append(relationship.getRelationshipId()).append(TSV_FIELD_DELIMITER)
-						.append(relationship.getEffectiveTime()).append(TSV_FIELD_DELIMITER)
-						.append("1").append(TSV_FIELD_DELIMITER)
-						.append(relationship.getModuleId()).append(TSV_FIELD_DELIMITER)
-						.append(fragSetEntry.getKey()).append(TSV_FIELD_DELIMITER)
-						.append(relationship.getDestinationId()).append(TSV_FIELD_DELIMITER)
-						.append(relationship.getGroup()).append(TSV_FIELD_DELIMITER)
-						.append(relationship.getTypeId()).append(TSV_FIELD_DELIMITER)
-						.append(relationship.getCharacteristicType()).append(TSV_FIELD_DELIMITER)
-						.append(Concepts.EXISTENTIAL_RESTRICTION_MODIFIER);
+							.append(relationship.getEffectiveTime()).append(TSV_FIELD_DELIMITER)
+							.append("1").append(TSV_FIELD_DELIMITER)
+							.append(relationship.getModuleId()).append(TSV_FIELD_DELIMITER)
+							.append(fragSetEntry.getKey()).append(TSV_FIELD_DELIMITER)
+							.append(relationship.getDestinationId()).append(TSV_FIELD_DELIMITER)
+							.append(relationship.getGroup()).append(TSV_FIELD_DELIMITER)
+							.append(relationship.getTypeId()).append(TSV_FIELD_DELIMITER)
+							.append(relationship.getCharacteristicType()).append(TSV_FIELD_DELIMITER)
+							.append(Concepts.EXISTENTIAL_RESTRICTION_MODIFIER);
 					out.print(line.toString() + LINE_DELIMITER);
 				}
 			}
 		}
 	}
 
-	public void removeRelationship(boolean stated, String sourceId, String relationshipIdStr) {
-		long relationshipId = parseLong(relationshipIdStr);
-		if (stated) {
-			getStatedRelationships(parseLong(sourceId)).removeIf(relationship -> relationshipId == relationship.getRelationshipId());
-			statedRelationshipsById.remove(relationshipId);
-		} else {
-			getInferredRelationships(parseLong(sourceId)).removeIf(relationship -> relationshipId == relationship.getRelationshipId());
-			inferredRelationshipsById.remove(relationshipId);
-		}
-	}
-
-	public void addAxiom(String referencedComponentId, String axiomId, OWLAxiom owlAxiom) {
-		conceptAxiomMap.computeIfAbsent(parseLong(referencedComponentId), id -> new HashSet<>()).add(owlAxiom);
-		axiomsById.put(axiomId, owlAxiom);
-	}
-
-	public void removeAxiom(String referencedComponentId, String id) {
-		// Find the previously loaded axiom by id so that it can be removed from the set of axioms on the concept
-		OWLAxiom owlAxiomToRemove = axiomsById.remove(id);
-		if (owlAxiomToRemove != null) {
-			conceptAxiomMap.get(parseLong(referencedComponentId)).remove(owlAxiomToRemove);
-		}
-	}
-
-	public Map<Long, Set<OWLAxiom>> getConceptAxiomMap() {
-		return conceptAxiomMap;
-	}
 }
