@@ -12,54 +12,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.*;
-import java.util.ArrayList;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.snomed.otf.reasoner.server.service.TestFileUtil.readLinesTrim;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @Import(Configuration.class)
-public class SnomedReasonerServiceTest {
+public class GCIClassificationIntegrationTest {
 
 	@Autowired
 	private SnomedReasonerService snomedReasonerService;
 
 	private static final String REASONER_FACTORY_CLASS_NAME = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
-	private static final String FINDING_SITE = "363698007";
-
-	@Test
-	public void testClassifyBase() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
-		File baseRF2SnapshotZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
-		File emptyDeltaZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Empty_delta");
-		assertNotNull(snomedReasonerService);
-
-		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(emptyDeltaZip), REASONER_FACTORY_CLASS_NAME);
-
-		// Assert results
-		List<String> lines = readLinesTrim(results);
-		assertEquals("Relationship delta should only contain the header line.",1, lines.size());
-	}
-
-	@Test
-	public void testClassifyNewConcept() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
-		File baseRF2SnapshotZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
-		File newDiabetesConceptDeltaZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Add_Diabetes_delta");
-		assertNotNull(snomedReasonerService);
-
-		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(newDiabetesConceptDeltaZip), REASONER_FACTORY_CLASS_NAME);
-
-		// Assert results
-		List<String> lines = readLinesTrim(results);
-		assertEquals(3, lines.size());
-		assertTrue(lines.contains("1\t\t73211009\t362969004\t0\t" + Concepts.IS_A + "\t900000000000011006\t900000000000451002"));
-		assertTrue(lines.contains("1\t\t73211009\t113331007\t0\t" + FINDING_SITE + "\t900000000000011006\t900000000000451002"));
-	}
 
 	@Test
 	public void testClassifyGCI() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
@@ -104,18 +73,6 @@ public class SnomedReasonerServiceTest {
 		assertTrue("Inferred relationship. Diabetes due to cystic fibrosis - Finding site - Structure of endocrine system",
 				lines.contains("1\t\t100104001\t113331007\t0\t363698007\t900000000000011006\t900000000000451002"));
 
-	}
-
-	private List<String> readLinesTrim(File results) throws IOException {
-		List<String> lines = new ArrayList<>();
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(ZipUtil.getZipEntryStreamOrThrow(results, "sct2_Relationship_Delta_Classification_")))) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				lines.add(line.trim());
-				System.out.println(line);
-			}
-		}
-		return lines;
 	}
 
 }
