@@ -35,7 +35,7 @@ public class PropertyChainClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
+		File results = snomedReasonerService.classify("", new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);

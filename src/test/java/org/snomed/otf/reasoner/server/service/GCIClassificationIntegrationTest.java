@@ -6,7 +6,6 @@ import org.junit.runner.RunWith;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.snomed.otf.reasoner.server.Application;
 import org.snomed.otf.reasoner.server.Configuration;
-import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.util.ZipUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,7 +35,7 @@ public class GCIClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
+		File results = snomedReasonerService.classify("", new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);

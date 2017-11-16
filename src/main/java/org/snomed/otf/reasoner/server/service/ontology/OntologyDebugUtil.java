@@ -1,5 +1,6 @@
 package org.snomed.otf.reasoner.server.service.ontology;
 
+import com.google.common.base.Strings;
 import org.semanticweb.owlapi.functional.renderer.OWLFunctionalSyntaxRenderer;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -15,12 +16,12 @@ public class OntologyDebugUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(OntologyDebugUtil.class);
 
-	public static void serialiseOntologyForDebug(OWLOntology ontology) {
+	public static void serialiseOntologyForDebug(String classificationId, OWLOntology ontology) {
 		OWLFunctionalSyntaxRenderer ontologyRenderer = new OWLFunctionalSyntaxRenderer();
 		try {
 			File classificationsDirectory = new File("debug");
 			classificationsDirectory.mkdirs();
-			File owlFile = new File(classificationsDirectory, new Date().getTime() + ".owl");
+			File owlFile = new File(classificationsDirectory, new Date().getTime() + "_" + classificationId + ".owl");
 			logger.info("Serialising OWL Ontology before classification to file {}", owlFile.getAbsolutePath());
 			try (FileWriter fileWriter = new FileWriter(owlFile)) {
 				ontologyRenderer.render(ontology, fileWriter);

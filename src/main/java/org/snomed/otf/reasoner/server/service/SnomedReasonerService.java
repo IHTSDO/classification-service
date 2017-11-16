@@ -1,8 +1,6 @@
 package org.snomed.otf.reasoner.server.service;
 
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
-import org.semanticweb.owlapi.functional.renderer.OWLFunctionalSyntaxRenderer;
-import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.*;
@@ -20,6 +18,7 @@ import org.snomed.otf.reasoner.server.service.store.FileStoreService;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -42,6 +41,9 @@ public class SnomedReasonerService {
 	private final Map<String, Classification> classificationMap;
 
 	private final ClassificationResultsService resultsService;
+
+	@Value("${classification.debug.ontology-dump}")
+	private boolean outputOntologyFileForDebug;
 
 	public SnomedReasonerService(@Autowired FileStoreService fileStoreService, @Autowired ClassificationResultsService resultsService) {
 		this.fileStoreService = fileStoreService;
@@ -90,7 +92,7 @@ public class SnomedReasonerService {
 		try (InputStream previousReleaseRf2SnapshotArchive = fileStoreService.loadPreviousRelease(classification.getPreviousRelease());
 			 InputStream currentReleaseRf2DeltaArchive = fileStoreService.loadDeltaInput(classification)) {
 
-			File resultsArchive = classify(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive, classification.getReasonerId());
+			File resultsArchive = classify(classification.getClassificationId(), previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive, classification.getReasonerId());
 
 			fileStoreService.saveResults(classification, resultsArchive);
 			classification.setStatus(ClassificationStatus.COMPLETED);
@@ -112,7 +114,7 @@ public class SnomedReasonerService {
 		classification.setDeveloperMessage(e.getMessage());
 	}
 
-	public File classify(InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
+	public File classify(String classificationId, InputStream previousReleaseRf2SnapshotArchive, InputStream currentReleaseRf2DeltaArchive, String reasonerFactoryClassName) throws ReleaseImportException, OWLOntologyCreationException, ReasonerServiceException {
 		Date startDate = new Date();
 		logger.info("Checking requested reasoner is available");
 		OWLReasonerFactory reasonerFactory = getOWLReasonerFactory(reasonerFactoryClassName);
@@ -131,8 +133,9 @@ public class SnomedReasonerService {
 		OntologyService ontologyService = new OntologyService();
 		OWLOntology owlOntology = ontologyService.createOntology(snomedTaxonomy);
 
-		// Uncomment for debugging
-//		OntologyDebugUtil.serialiseOntologyForDebug(owlOntology);
+		if (outputOntologyFileForDebug) {
+			OntologyDebugUtil.serialiseOntologyForDebug(classificationId, owlOntology);
+		}
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());

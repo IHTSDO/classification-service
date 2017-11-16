@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +38,7 @@ public class SimpleClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(emptyDeltaZip), Application.DEFAULT_REASONER_FACTORY);
+		File results = snomedReasonerService.classify("", new FileInputStream(baseRF2SnapshotZip), new FileInputStream(emptyDeltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);
@@ -53,7 +52,7 @@ public class SimpleClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(newDiabetesConceptDeltaZip), Application.DEFAULT_REASONER_FACTORY);
+		File results = snomedReasonerService.classify("", new FileInputStream(baseRF2SnapshotZip), new FileInputStream(newDiabetesConceptDeltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);

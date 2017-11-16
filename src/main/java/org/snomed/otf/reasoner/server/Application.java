@@ -47,7 +47,7 @@ public class Application extends Configuration {
 		try {
 			InputStream snomedRf2SnapshotArchive = new FileInputStream(snomedRf2SnapshotArchivePath);
 			InputStream snomedRf2DeltaArchive = new FileInputStream(snomedRf2DeltaArchivePath);
-			File results = snomedReasonerService.classify(snomedRf2SnapshotArchive, snomedRf2DeltaArchive, DEFAULT_REASONER_FACTORY);
+			File results = snomedReasonerService.classify("", snomedRf2SnapshotArchive, snomedRf2DeltaArchive, DEFAULT_REASONER_FACTORY);
 			logger.info("Results file path {}", results.getAbsolutePath());
 		} catch (ReleaseImportException | OWLOntologyCreationException e) {
 			logger.error("Classification error", e);
