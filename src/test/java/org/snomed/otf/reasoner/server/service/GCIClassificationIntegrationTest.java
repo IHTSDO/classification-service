@@ -4,6 +4,7 @@ import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.snomed.otf.reasoner.server.Application;
 import org.snomed.otf.reasoner.server.Configuration;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.util.ZipUtil;
@@ -28,8 +29,6 @@ public class GCIClassificationIntegrationTest {
 	@Autowired
 	private SnomedReasonerService snomedReasonerService;
 
-	private static final String REASONER_FACTORY_CLASS_NAME = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
-
 	@Test
 	public void testClassifyGCI() throws IOException, OWLOntologyCreationException, ReleaseImportException, ReasonerServiceException {
 		File baseRF2SnapshotZip = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines("src/test/resources/SnomedCT_MiniRF2_Base_snapshot");
@@ -37,7 +36,7 @@ public class GCIClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), REASONER_FACTORY_CLASS_NAME);
+		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);

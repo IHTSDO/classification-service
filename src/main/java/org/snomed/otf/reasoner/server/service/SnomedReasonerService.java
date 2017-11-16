@@ -14,6 +14,7 @@ import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomyWalker;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeCollector;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
+import org.snomed.otf.reasoner.server.service.ontology.OntologyDebugUtil;
 import org.snomed.otf.reasoner.server.service.ontology.OntologyService;
 import org.snomed.otf.reasoner.server.service.store.FileStoreService;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
@@ -131,7 +132,7 @@ public class SnomedReasonerService {
 		OWLOntology owlOntology = ontologyService.createOntology(snomedTaxonomy);
 
 		// Uncomment for debugging
-//		serialiseOntologyForDebug(owlOntology);
+//		OntologyDebugUtil.serialiseOntologyForDebug(owlOntology);
 
 		logger.info("Creating OwlReasoner");
 		final OWLReasonerConfiguration configuration = new SimpleConfiguration(new ConsoleProgressMonitor());
@@ -172,21 +173,6 @@ public class SnomedReasonerService {
 			throw new ReasonerServiceException(String.format("Requested reasoner class '%s' not found.", reasonerFactoryClassName), e);
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new ReasonerServiceException(String.format("An instance of requested reasoner '%s' could not be created.", reasonerFactoryClass), e);
-		}
-	}
-
-	private void serialiseOntologyForDebug(OWLOntology ontology) {
-		OWLFunctionalSyntaxRenderer ontologyRenderer = new OWLFunctionalSyntaxRenderer();
-		try {
-			File classificationsDirectory = new File("debug/classificationMap");
-			classificationsDirectory.mkdirs();
-			File owlFile = new File(classificationsDirectory, new Date().getTime() + ".owl");
-			logger.info("Serialising OWL Ontology before classification to file {}", owlFile.getAbsolutePath());
-			try (FileWriter fileWriter = new FileWriter(owlFile)) {
-				ontologyRenderer.render(ontology, fileWriter);
-			}
-		} catch (OWLRendererException | IOException e) {
-			logger.error("Failed to serialise OWL Ontology.", e);
 		}
 	}
 

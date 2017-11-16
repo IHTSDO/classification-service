@@ -1,0 +1,23 @@
+#
+# Comments are removed by unit test
+#
+id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
+
+#
+# We will include a Property Chain which allows the reasoner to infer that
+# the concept "Morphine sulphate product" has an active ingredient of "Morphine substance"
+# causing it to be classified under "Morphine product"
+#
+
+# The following OWL Axiom states that a new "Has active ingredient" attribute can be inferred
+# by taking the "Is modification of" attribute value from any existing "Has active ingredient" value
+#
+# Here is a more human readable version:
+# SubObjectPropertyOf(
+#     ObjectPropertyChain(
+#         :role_127489000 - Has active ingredient attribute
+#         :role_738774007 - Is modification of attribute
+#     )
+#     :role_127489000 - Has active ingredient attribute
+# )
+2771a3fd-3b35-495c-936e-8cfb19db8a8b	20180731	1	900000000000207008	733073007	127489000	SubObjectPropertyOf(ObjectPropertyChain(:role_127489000 :role_738774007) :role_127489000)

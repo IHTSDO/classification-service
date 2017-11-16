@@ -30,7 +30,9 @@ public class OntologyService {
 			parseLong(Concepts.PART_OF),
 			parseLong(Concepts.LATERALITY),
 			parseLong(Concepts.HAS_DOSE_FORM),
-			parseLong(Concepts.HAS_ACTIVE_INGREDIENT)
+			parseLong(Concepts.HAS_ACTIVE_INGREDIENT),
+			parseLong(Concepts.IS_MODIFICATION_OF)
+			// TODO: Check with Yong that adding "Is modification of" to the never grouped list is the correct way to make property chains work.
 	);
 
 	private final OWLOntologyManager manager;

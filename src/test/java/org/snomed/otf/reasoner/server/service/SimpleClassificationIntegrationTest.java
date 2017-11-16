@@ -4,6 +4,7 @@ import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.snomed.otf.reasoner.server.Application;
 import org.snomed.otf.reasoner.server.Configuration;
 import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.util.ZipUtil;
@@ -29,7 +30,6 @@ public class SimpleClassificationIntegrationTest {
 	@Autowired
 	private SnomedReasonerService snomedReasonerService;
 
-	private static final String REASONER_FACTORY_CLASS_NAME = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
 	private static final String FINDING_SITE = "363698007";
 
 	@Test
@@ -39,7 +39,7 @@ public class SimpleClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(emptyDeltaZip), REASONER_FACTORY_CLASS_NAME);
+		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(emptyDeltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);
@@ -53,7 +53,7 @@ public class SimpleClassificationIntegrationTest {
 		assertNotNull(snomedReasonerService);
 
 		// Run classification
-		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(newDiabetesConceptDeltaZip), REASONER_FACTORY_CLASS_NAME);
+		File results = snomedReasonerService.classify(new FileInputStream(baseRF2SnapshotZip), new FileInputStream(newDiabetesConceptDeltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
 		List<String> lines = readLinesTrim(results);
