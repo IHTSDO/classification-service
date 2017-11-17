@@ -13,6 +13,7 @@ mvn clean package
 java -Xmx3g -jar target/classification-service*.jar
 ```
 Access the service API documentation at [http://localhost:8089/classification-service](http://localhost:8089/classification-service)
+The default username and password is classification:classification.
 
 ## Setup
 For each SNOMED CT Edition you would like to classify against put an RF2 archive containing the Snapshot into the directory **/store/releases**
@@ -27,6 +28,8 @@ Example command line configuration, changing the port number:
 ```bash
 java -Xmx3g -jar target/classification-service*.jar --server.port=8081
 ```
+
+The default username and password (classification:classification) can be changed using the _security.user.name_ and _security.user.password_ properties.
 
 ## Building for Debian/Ubuntu Linux
 A Debian package can be created using the 'deb' maven profile. 
