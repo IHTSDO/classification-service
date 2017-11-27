@@ -20,7 +20,9 @@ import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for different implementations, which generate a set of components in normal form, based on a subsumption
@@ -35,9 +37,20 @@ public abstract class NormalFormGenerator<T> {
 	
 	protected final SnomedTaxonomy snomedTaxonomy;
 
-	public NormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, SnomedTaxonomy snomedTaxonomy) {
+	protected final Set<Long> allTransitiveProperties;
+
+	protected boolean preprocessingComplete = false;
+
+	public NormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, SnomedTaxonomy snomedTaxonomy, Set<Long> propertiesDeclaredAsTransitive) {
 		this.reasonerTaxonomy = reasonerTaxonomy;
 		this.snomedTaxonomy = snomedTaxonomy;
+		Set<Long> allTransitiveProperties = new HashSet<>(propertiesDeclaredAsTransitive);
+
+		// Make sure that the sub types of the attributes declared as transitive are also recognised
+		for (Long transitivePropertyId : propertiesDeclaredAsTransitive) {
+			allTransitiveProperties.addAll(snomedTaxonomy.getSubTypeIds(transitivePropertyId));
+		}
+		this.allTransitiveProperties = allTransitiveProperties;
 	}
 	
 	/**
@@ -50,23 +63,43 @@ public abstract class NormalFormGenerator<T> {
 	public final int collectNormalFormChanges(final OntologyChangeProcessor<T> processor, final Ordering<T> ordering) {
 		final List<Long> entries = reasonerTaxonomy.getConceptIds();
 		int generatedComponentCount = 0;
-		
+
+		for (Long conceptId : entries) {
+			firstNormalisationPass(conceptId);
+		}
+
+		preprocessingComplete = true;
+
 		for (Long conceptId : entries) {
 			final Collection<T> existingComponents = getExistingComponents(conceptId);
-			final Collection<T> generatedComponents = getGeneratedComponents(conceptId);
+			final Collection<T> generatedComponents = secondNormalisationPass(conceptId);
 			processor.apply(conceptId, existingComponents, generatedComponents, ordering);
 			generatedComponentCount += generatedComponents.size();
 		}
 
-		return generatedComponentCount; 
+		return generatedComponentCount;
 	}
-	
-	public abstract Collection<T> getExistingComponents(final long conceptId);
+
+	protected abstract Collection<T> getExistingComponents(final long conceptId);
 
 	/**
-	 * Computes and returns a set of components in normal form for the specified concept.
+	 * Computes and caches a set of components in normal form for the specified concept.
+	 * The first pass uses the is-a hierarchy for normalisation.
+	 * This hierarchy is available during the first pass because of the breath first order of processing concepts.
+	 *
+	 * @param conceptId the concept for which components should be generated
+	 */
+	protected abstract void firstNormalisationPass(final long conceptId);
+
+	/**
+	 * Performs additional normalisation as required before returning components in normal form for the specified concept.
+	 * The second pass uses the hierarchies of any other transitive properties in order to further normalise components.
+	 * Other transitive hierarchies can not be guaranteed to be complete during the first pass because the super-type of a
+	 * concept in a transitive property hierarchy may be at a lower level in the is-a hierarchy meaning that it's processed later during the first pass.
+	 *
 	 * @param conceptId the concept for which components should be generated
 	 * @return the generated components of the specified concept in normal form
 	 */
-	public abstract Collection<T> getGeneratedComponents(final long conceptId);
+	protected abstract Collection<T> secondNormalisationPass(final long conceptId);
+
 }

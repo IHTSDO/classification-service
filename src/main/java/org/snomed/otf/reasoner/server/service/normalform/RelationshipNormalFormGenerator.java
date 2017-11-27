@@ -24,14 +24,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.IS_A_LONG;
 
 import java.text.MessageFormat;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -44,17 +40,10 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Maps.EntryTransformer;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
+import org.snomed.otf.reasoner.server.service.normalform.transitive.NodeGraph;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
 
 /**
@@ -421,14 +410,15 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 				 * - (some/all) r'A', where both of the above applies
 				 */
 				final Set<Long> attributeClosure = getConceptAndAllSuperTypes(getTypeId());
-				final Set<Long> valueClosure = getConceptAndAllSuperTypes(getDestinationId());
+				final Set<Long> valueClosure = getValueClosure(getDestinationId(), getTypeId());
 
 				return attributeClosure.contains(other.getTypeId()) && valueClosure.contains(other.getDestinationId());
 
 			} else if (isDestinationNegated() && !other.isDestinationNegated()) {
 
 				final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-				final Set<Long> superTypes = reasonerTaxonomy.getAncestors(getDestinationId());
+				final Set<Long> superTypes = getValueClosure(getDestinationId(), getTypeId());
+				superTypes.remove(getDestinationId());
 
 				/*
 				 * Note that "other" itself may be exhaustive in this case --
@@ -459,7 +449,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 				 * the one which negates a more loose definition is the one that is more strict in the end.
 				 */
 				final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-				final Set<Long> otherValueClosure = getConceptAndAllSuperTypes(other.getDestinationId());
+				final Set<Long> otherValueClosure = getValueClosure(other.getDestinationId(), other.getTypeId());
 
 				return otherAttributeClosure.contains(getTypeId()) && otherValueClosure.contains(getDestinationId());
 			}
@@ -503,6 +493,17 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 			final Set<Long> conceptAndAncestors = new LongOpenHashSet(ancestors);
 			conceptAndAncestors.add(conceptId);
 			return conceptAndAncestors;
+		}
+
+		private Set<Long> getValueClosure(final long conceptId, final long typeId) {
+			Set<Long> closure = getConceptAndAllSuperTypes(conceptId);
+			if (allTransitiveProperties.contains(typeId)) {
+				closure.addAll(transitiveNodeGraphs.get(typeId).getAncestors(conceptId));
+				for (Long transitiveProperty : snomedTaxonomy.getSubTypeIds(typeId)) {
+					closure.addAll(transitiveNodeGraphs.get(transitiveProperty).getAncestors(conceptId));
+				}
+			}
+			return closure;
 		}
 
 		@Override
@@ -657,15 +658,23 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 
 	private static final int ZERO_GROUP = 0;
 
+	private final Map<Long, NodeGraph> transitiveNodeGraphs = new HashMap<>();
+
 	private final Map<Long, Collection<Relationship>> generatedNonIsACache = new Long2ObjectOpenHashMap<>();
+
+	private final Set<Long> conceptsWithTransitiveAttributes = new LongOpenHashSet();
 
 	/**
 	 * Creates a new distribution normal form generator instance.
 	 *
 	 * @param reasonerTaxonomy the reasoner to extract results from (may not be {@code null})
+	 * @param propertiesDeclaredAsTransitive
 	 */
-	public RelationshipNormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, final SnomedTaxonomy snomedTaxonomy) {
-		super(reasonerTaxonomy, snomedTaxonomy);
+	public RelationshipNormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, final SnomedTaxonomy snomedTaxonomy, Set<Long> propertiesDeclaredAsTransitive) {
+		super(reasonerTaxonomy, snomedTaxonomy, propertiesDeclaredAsTransitive);
+
+		// Initialise node graphs for each transitive property
+		allTransitiveProperties.forEach(id -> transitiveNodeGraphs.put(id, new NodeGraph()));
 	}
 
 	@Override
@@ -673,45 +682,27 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		return snomedTaxonomy.getInferredRelationships(conceptId);
 	}
 
-	/**
-	 * Outbound relationships are calculated in the following fashion:
-	 * 
-	 * <ol>
-	 * <li>
-	 * The given concept's <i>direct supertypes</i> are collected from the
-	 * inferred taxonomy, and IS_A relationships are created for all of 
-	 * them;
-	 * </li>
-	 * <li>
-	 * The <i>given concept and all of its ancestors</i> are gathered from
-	 * the taxonomy; the outbound non-IS_A relationship set reachable from
-	 * these concepts is extracted; this set is further reduced to contain 
-	 * only non-redundant relationships; the resulting relationship groups 
-	 * are numbered continuously from 1;
-	 * </li>
-	 * <li>
-	 * Existing inferred non-IS_A relationships are collected for the 
-	 * concept, forming relationship groups;
-	 * </li>
-	 * <li>
-	 * Where applicable, new inferred relationship group and union group 
-	 * numbers are shuffled to preserve existing values.
-	 * </li>
-	 * </ol>
-	 *
-	 * @return a collection of outbound relationships for the specified concept in distribution normal form
-	 */
 	@Override
-	public Collection<Relationship> getGeneratedComponents(final long conceptId) {
-		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
+	public void firstNormalisationPass(long conceptId) {
+		final Iterable<Relationship> inferredNonIsAFragments = getInferredNonIsAFragmentsInNormalForm(conceptId);
 
-		// Step 1: create IS-A relationships
-		final Iterable<Relationship> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
+		// Place results in the cache, so children can re-use it
+		generatedNonIsACache.put(conceptId, ImmutableList.copyOf(inferredNonIsAFragments));
+
+		// Add to transitive graphs
+		Streams.stream(inferredNonIsAFragments).filter(r -> allTransitiveProperties.contains(r.getTypeId())).forEach(r -> {
+			transitiveNodeGraphs.get(r.getTypeId()).addParent(conceptId, r.getDestinationId());
+			conceptsWithTransitiveAttributes.add(conceptId);
+		});
+	}
+
+	private Iterable<Relationship> getInferredNonIsAFragmentsInNormalForm(long conceptId) {
+		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
 
 		// Step 2: get all non IS-A relationships from ancestors and remove redundancy, then cache the results for later use
 		final Map<Long, Collection<Relationship>> otherNonIsAFragments = new Long2ObjectOpenHashMap<>();
 
-		/* 
+		/*
 		 * We can rely on the fact that the tree is processed in breadth-first order, so the parents' non-IS A relationships
 		 * will already be present in the cache
 		 */
@@ -723,15 +714,56 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		final Collection<Relationship> ownInferredFragments = snomedTaxonomy.getInferredRelationships(conceptId);
 		final Collection<Relationship> ownInferredNonIsaFragments = Collections2.filter(ownInferredFragments, input -> input.getTypeId() != IS_A_LONG);
 
-		final Iterable<Relationship> inferredNonIsAFragments = getInferredNonIsAFragments(conceptId,
-				ownInferredNonIsaFragments, 
+		return getInferredNonIsAFragments(conceptId,
+				ownInferredNonIsaFragments,
 				ownStatedNonIsaRelationships,
 				otherNonIsAFragments);
+	}
 
-		// Place results in the cache, so children can re-use it
-		generatedNonIsACache.put(conceptId, ImmutableList.copyOf(inferredNonIsAFragments));
+	/**
+	 * Outbound relationships are calculated in the following fashion:
+	 *
+	 * <ol>
+	 * <li>
+	 * The given concept's <i>direct supertypes</i> are collected from the
+	 * inferred taxonomy, and IS_A relationships are created for all of
+	 * them;
+	 * </li>
+	 * <li>
+	 * The <i>given concept and all of its ancestors</i> are gathered from
+	 * the taxonomy; the outbound non-IS_A relationship set reachable from
+	 * these concepts is extracted; this set is further reduced to contain
+	 * only non-redundant relationships; the resulting relationship groups
+	 * are numbered continuously from 1;
+	 * </li>
+	 * <li>
+	 * Existing inferred non-IS_A relationships are collected for the
+	 * concept, forming relationship groups;
+	 * </li>
+	 * <li>
+	 * Where applicable, new inferred relationship group and union group
+	 * numbers are shuffled to preserve existing values.
+	 * </li>
+	 * </ol>
+	 *
+	 * @return a collection of outbound relationships for the specified concept in distribution normal form
+	 */
+	@Override
+	public Collection<Relationship> secondNormalisationPass(final long conceptId) {
+		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
 
-		// Step 3: concatenate and return
+		// Step 1: create IS-A relationships
+		final Iterable<Relationship> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
+
+		Iterable<Relationship> inferredNonIsAFragments;
+		inferredNonIsAFragments = generatedNonIsACache.get(conceptId);
+		for (Relationship inferredNonIsAFragment : inferredNonIsAFragments) {
+			if (conceptsWithTransitiveAttributes.contains(inferredNonIsAFragment.getDestinationId())) {
+				inferredNonIsAFragments = getInferredNonIsAFragmentsInNormalForm(conceptId);
+				break;
+			}
+		}
+
 		return ImmutableList.copyOf(Iterables.concat(inferredIsAFragments, inferredNonIsAFragments));
 	}
 
@@ -743,7 +775,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		return parentIds.stream().map(parentId -> new Relationship(IS_A_LONG, parentId)).collect(Collectors.toSet());
 	}
 
-	private Iterable<Relationship> getInferredNonIsAFragments(final long sourceId,
+	private Iterable<Relationship> getInferredNonIsAFragments(long conceptId,
 															  final Collection<Relationship> ownInferredNonIsAFragments,
 															  final Collection<Relationship> ownStatedNonIsAFragments,
 															  final Map<Long, Collection<Relationship>> parentStatedNonIsAFragments) {

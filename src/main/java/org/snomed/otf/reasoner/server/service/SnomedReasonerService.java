@@ -26,6 +26,7 @@ import java.io.*;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -132,6 +133,7 @@ public class SnomedReasonerService {
 		logger.info("Creating OwlOntology");
 		OntologyService ontologyService = new OntologyService();
 		OWLOntology owlOntology = ontologyService.createOntology(snomedTaxonomy);
+		Set<Long> propertiesDeclaredAsTransitive = ontologyService.getPropertiesDeclaredAsTransitive(owlOntology);
 
 		if (outputOntologyFileForDebug) {
 			OntologyDebugUtil.serialiseOntologyForDebug(classificationId, owlOntology);
@@ -152,7 +154,7 @@ public class SnomedReasonerService {
 		ReasonerTaxonomy reasonerTaxonomy = walker.walk();
 
 		logger.info("Generate normal form");
-		RelationshipNormalFormGenerator normalFormGenerator = new RelationshipNormalFormGenerator(reasonerTaxonomy, snomedTaxonomy);
+		RelationshipNormalFormGenerator normalFormGenerator = new RelationshipNormalFormGenerator(reasonerTaxonomy, snomedTaxonomy, propertiesDeclaredAsTransitive);
 		RelationshipChangeCollector changeCollector = new RelationshipChangeCollector();
 		normalFormGenerator.collectNormalFormChanges(changeCollector);
 
