@@ -21,7 +21,6 @@
  */
 package org.snomed.otf.reasoner.server.service.normalform;
 
-import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.*;
 import com.google.common.collect.Maps.EntryTransformer;
@@ -213,12 +212,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 
 	private Iterable<Group> toGroups(final boolean preserveNumbers, final Collection<Relationship> nonIsARelationshipFragments) {
 
-		final Map<Integer, Collection<Relationship>> relationshipsByGroupId = Multimaps.index(nonIsARelationshipFragments, new Function<Relationship, Integer>() {
-			@Override
-			public Integer apply(final Relationship input) {
-				return input.getGroup();
-			}
-		}).asMap();
+		final Map<Integer, Collection<Relationship>> relationshipsByGroupId = Multimaps.index(nonIsARelationshipFragments, Relationship::getGroup).asMap();
 
 		final Collection<Collection<Group>> groups = Maps.transformEntries(relationshipsByGroupId, 
 				new EntryTransformer<Integer, Collection<Relationship>, Collection<Group>>() {
@@ -229,7 +223,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 
 				if (key == 0) {
 					// Relationships in group 0 form separate groups
-					return ImmutableList.copyOf(toZeroGroups(preserveNumbers, disjointUnionGroups));
+					return ImmutableList.copyOf(toZeroGroups(disjointUnionGroups));
 				} else {
 					// Other group numbers produce a single group from all fragments
 					return ImmutableList.of(toNonZeroGroup(preserveNumbers, key, disjointUnionGroups));
@@ -240,15 +234,12 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		return Iterables.concat(groups);
 	}
 
-	private Iterable<Group> toZeroGroups(final boolean preserveNumbers, final Iterable<UnionGroup> disjointUnionGroups) {
-		return FluentIterable.from(disjointUnionGroups).transform(new Function<UnionGroup, Group>() {
-			@Override
-			public Group apply(final UnionGroup input) {
-				final Group group = new Group(ImmutableList.of(input));
-				group.setGroupNumber(ZERO_GROUP);
-				return group;
-			}
-		});
+	private Iterable<Group> toZeroGroups(final Iterable<UnionGroup> disjointUnionGroups) {
+		return Streams.stream(disjointUnionGroups).map(unionGroup -> {
+			final Group group = new Group(ImmutableList.of(unionGroup));
+			group.setGroupNumber(ZERO_GROUP);
+			return group;
+		}).collect(Collectors.toList());
 	}
 
 	private Group toNonZeroGroup(final boolean preserveNumbers, final int groupNumber, final Iterable<UnionGroup> disjointUnionGroups) {
@@ -260,48 +251,34 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	}
 
 	private Iterable<UnionGroup> toUnionGroups(final boolean preserveNumbers, final Collection<Relationship> values) {
-		final Map<Integer, Collection<Relationship>> relationshipsByUnionGroupId = Multimaps.index(values, new Function<Relationship, Integer>() {
-			@Override
-			public Integer apply(final Relationship input) {
-				return input.getUnionGroup();
-			}
-		}).asMap();
+		final Map<Integer, Collection<Relationship>> relationshipsByUnionGroupId = Multimaps.index(values, Relationship::getUnionGroup).asMap();
 
-		final Collection<Collection<UnionGroup>> unionGroups = Maps.transformEntries(relationshipsByUnionGroupId, 
-				new EntryTransformer<Integer, Collection<Relationship>, Collection<UnionGroup>>() {
-			@Override
-			public Collection<UnionGroup> transformEntry(final Integer key, final Collection<Relationship> values) {
-				if (key == 0) {
-					// Relationships in union group 0 form separate union groups
-					return ImmutableList.copyOf(toZeroUnionGroups(values));
-				} else {
-					// Other group numbers produce a single union group from all fragments
-					return ImmutableList.of(toNonZeroUnionGroup(preserveNumbers, key, values));
-				}
-			}
-		}).values();
+		final Collection<Collection<UnionGroup>> unionGroups = Maps.transformEntries(relationshipsByUnionGroupId,
+				(EntryTransformer<Integer, Collection<Relationship>, Collection<UnionGroup>>) (key, values1) -> {
+					if (key == 0) {
+						// Relationships in union group 0 form separate union groups
+						return ImmutableList.copyOf(toZeroUnionGroups(values1));
+					} else {
+						// Other group numbers produce a single union group from all fragments
+						return ImmutableList.of(toNonZeroUnionGroup(preserveNumbers, key, values1));
+					}
+				}).values();
 
 		return Iterables.concat(unionGroups);
 	}
 
 	private Iterable<UnionGroup> toZeroUnionGroups(final Collection<Relationship> values) {
-		return FluentIterable.from(values).transform(new Function<Relationship, UnionGroup>() {
-			@Override
-			public UnionGroup apply(final Relationship input) {
-				final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(RelationshipNormalFormGenerator.this, input)));
-				unionGroup.setUnionGroupNumber(ZERO_GROUP);
-				return unionGroup;
-			}
-		});
+		return values.stream().map(relationship -> {
+			final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(RelationshipNormalFormGenerator.this, relationship)));
+			unionGroup.setUnionGroupNumber(ZERO_GROUP);
+			return unionGroup;
+		}).collect(Collectors.toSet());
 	}
 
 	private UnionGroup toNonZeroUnionGroup(final boolean preserveNumbers, final int unionGroupNumber, final Collection<Relationship> values) {
-		final Iterable<RelationshipFragment> fragments = FluentIterable.from(values).transform(new Function<Relationship, RelationshipFragment>() {
-			@Override
-			public RelationshipFragment apply(final Relationship input) {
-				return new RelationshipFragment(RelationshipNormalFormGenerator.this, input);
-			}
-		});
+		Set<RelationshipFragment> fragments = values.stream()
+				.map(relationship -> new RelationshipFragment(RelationshipNormalFormGenerator.this, relationship))
+				.collect(Collectors.toSet());
 
 		final UnionGroup unionGroup = new UnionGroup(fragments);
 		if (preserveNumbers) {
@@ -395,7 +372,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	public final void collectNormalFormChanges(final OntologyChangeProcessor<Relationship> processor) {
 		LOGGER.info(">>> Relationship normal form generation");
 		final Stopwatch stopwatch = Stopwatch.createStarted();
-		final int results = collectNormalFormChanges(processor, StatementFragmentOrdering.INSTANCE);
+		collectNormalFormChanges(processor, StatementFragmentOrdering.INSTANCE);
 		LOGGER.info(MessageFormat.format("<<< Relationship normal form generation [{0}]", stopwatch.toString()));
 	}
 
