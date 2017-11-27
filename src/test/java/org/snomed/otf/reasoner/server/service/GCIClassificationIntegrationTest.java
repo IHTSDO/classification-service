@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.snomed.otf.reasoner.server.service.TestFileUtil.readLinesTrim;
+import static org.snomed.otf.reasoner.server.service.TestFileUtil.readInferredRelationshipLinesTrim;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -38,7 +38,7 @@ public class GCIClassificationIntegrationTest {
 		File results = snomedReasonerService.classify("", new FileInputStream(baseRF2SnapshotZip), new FileInputStream(deltaZip), Application.DEFAULT_REASONER_FACTORY);
 
 		// Assert results
-		List<String> lines = readLinesTrim(results);
+		List<String> lines = readInferredRelationshipLinesTrim(results);
 		assertEquals(9, lines.size());
 
 		assertTrue("Redundant relationship. Diabetes caused by drug - Is a - Diabetes mellitus",
