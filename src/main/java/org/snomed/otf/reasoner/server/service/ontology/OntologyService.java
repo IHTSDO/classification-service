@@ -127,6 +127,18 @@ public class OntologyService {
 		return manager.createOntology(axioms, IRI.create(SNOMED_IRI));
 	}
 
+	public Set<Long> getPropertiesDeclaredAsTransitive(OWLOntology owlOntology) {
+		Set<Long> transitiveProperties = new HashSet<>();
+		Set<OWLTransitiveObjectPropertyAxiom> transitiveObjectPropertyAxioms = owlOntology.getAxioms(AxiomType.TRANSITIVE_OBJECT_PROPERTY);
+		for (OWLTransitiveObjectPropertyAxiom transitiveObjectPropertyAxiom : transitiveObjectPropertyAxioms) {
+			String shortForm = transitiveObjectPropertyAxiom.getProperty().getNamedProperty().getIRI().getShortForm();
+			String propertyIdString = shortForm.replace(ROLE, "");
+			transitiveProperties.add(Long.parseLong(propertyIdString));
+		}
+
+		return transitiveProperties;
+	}
+
 	private OWLClassExpression getOnlyValueOrIntersection(Set<OWLClassExpression> terms) {
 		return terms.size() == 1 ? terms.iterator().next() : factory.getOWLObjectIntersectionOf(terms);
 	}
