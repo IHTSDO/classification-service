@@ -27,6 +27,7 @@ public class OntologyService {
 	public static final String SNOMED_ROLE_HAS_MEASUREMENT = SNOMED + "roleHasMeasurement";
 
 	public static final Set<Long> NEVER_GROUPED_ROLE_IDS = Sets.newHashSet(
+			parseLong(Concepts.ALL_OR_PART_OF),
 			parseLong(Concepts.PART_OF),
 			parseLong(Concepts.LATERALITY),
 			parseLong(Concepts.HAS_DOSE_FORM),

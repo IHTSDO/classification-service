@@ -23,6 +23,7 @@ public class Concepts {
 	// Concepts that require special care when classifying
 	public static final String CONCEPT_MODEL_ATTRIBUTE = "410662002";
 	public static final Long CONCEPT_MODEL_ATTRIBUTE_LONG = parseLong(CONCEPT_MODEL_ATTRIBUTE);
+	public static final String ALL_OR_PART_OF = "733928003";
 	public static final String PART_OF = "123005000";
 	public static final String LATERALITY = "272741003";
 	public static final String HAS_ACTIVE_INGREDIENT = "127489000";
