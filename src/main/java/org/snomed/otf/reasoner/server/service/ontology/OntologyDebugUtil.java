@@ -35,7 +35,7 @@ public class OntologyDebugUtil {
 					String line;
 					while ((line = reader.readLine()) != null) {
 						String[] split = line.split("\\t");
-						names.putIfAbsent(split[0], split[1]);
+						names.putIfAbsent(split[0], split[1].replace(" ", "_"));
 					}
 				}
 				File owlFileWithNames = new File(owlFile.getAbsolutePath().replace(".owl", "-with-names.owl"));
@@ -44,7 +44,7 @@ public class OntologyDebugUtil {
 					String line;
 					while ((line = reader.readLine()) != null) {
 						for (String conceptId : names.keySet()) {
-							line = line.replace(conceptId, conceptId + "-" + names.get(conceptId));
+							line = line.replace(conceptId, conceptId + "_" + names.get(conceptId));
 						}
 						writer.write(line);
 						writer.newLine();
