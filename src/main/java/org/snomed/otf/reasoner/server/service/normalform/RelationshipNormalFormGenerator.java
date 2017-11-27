@@ -16,636 +16,39 @@
  *
  * Copyright CSIRO Australian e-Health Research Centre (http://aehrc.com).
  * All rights reserved. Use is subject to license terms and conditions.
+ *
+ * Thanks to original author law223 - initial implementation in Snorocket's SNOMED API
  */
 package org.snomed.otf.reasoner.server.service.normalform;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.snomed.otf.reasoner.server.service.constants.Concepts.IS_A_LONG;
-
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Function;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.*;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import com.google.common.collect.Maps.EntryTransformer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Maps.EntryTransformer;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
+import org.snomed.otf.reasoner.server.service.normalform.internal.*;
 import org.snomed.otf.reasoner.server.service.normalform.transitive.NodeGraph;
 import org.snomed.otf.reasoner.server.service.taxonomy.SnomedTaxonomy;
+
+import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.snomed.otf.reasoner.server.service.constants.Concepts.IS_A_LONG;
 
 /**
  * Transforms a subsumption hierarchy and a set of non-ISA relationships into
  * distribution normal form.
- *
- * @author law223 - initial implementation in Snorocket's SNOMED API
  */
 public final class RelationshipNormalFormGenerator extends NormalFormGenerator<Relationship> {
-
-	/**
-	 * Represents any item in an ontology which can be compared for
-	 * expressiveness.
-	 *
-	 * @param <T>
-	 *            the implementing type
-	 */
-	private static interface SemanticComparable<T> {
-
-		/**
-		 * Checks if the specified item can be regarded as redundant when
-		 * compared to the current item. An item is redundant with respect to
-		 * another if it less specific, i.e. it describes a broader range of
-		 * individuals.
-		 *
-		 * @param other
-		 *            the item to compare against
-		 *
-		 * @return <code>true</code> if this item contains an equal or more
-		 *         specific description when compared to the other item,
-		 *         <code>false</code> otherwise
-		 */
-		public boolean isSameOrStrongerThan(T other);
-	}
-
-	/**
-	 * Represents a relationship group, consisting of a(n optionally preserved)
-	 * group number and a list of union groups. The object (source concept) is
-	 * not stored with the group; it is assumed to be known in context.
-	 *
-	 * @author law223
-	 */
-	private static final class Group implements SemanticComparable<Group> {
-
-		private final List<UnionGroup> unionGroups;
-
-		private int groupNumber = NUMBER_NOT_PRESERVED;
-
-		/**
-		 * Creates a new group instance.
-		 *
-		 * @param unionGroups
-		 *            the relationship union groups to associate with this group
-		 *            (may not be <code>null</code>)
-		 */
-		public Group(final Iterable<UnionGroup> unionGroups) {
-			checkArgument(unionGroups != null, "unionGroups is null.");
-			this.unionGroups = ImmutableList.copyOf(unionGroups);
-		}
-
-		public List<UnionGroup> getUnionGroups() {
-			return unionGroups;
-		}
-
-		public int getGroupNumber() {
-			return groupNumber;
-		}
-
-		public void setGroupNumber(final int groupNumber) {
-			checkArgument(groupNumber > NUMBER_NOT_PRESERVED, "Illegal group number '%s'.", groupNumber);
-			this.groupNumber = groupNumber;
-		}
-
-		@Override
-		public boolean isSameOrStrongerThan(final Group other) {
-
-			/*
-			 * Things same or stronger than A AND B AND C:
-			 *
-			 * - A' AND B AND C, where A' is a subclass of A
-			 * - A AND B AND C AND D
-			 *
-			 * So for each end every union group in "other", we'll have to find
-			 * a more expressive union group in this group. Points are awarded
-			 * if we have extra union groups not used in the comparison.
-			 */
-			for (final UnionGroup otherUnionGroup : other.unionGroups) {
-
-				boolean found = false;
-
-				for (final UnionGroup ourUnionGroup : unionGroups) {
-
-					if (ourUnionGroup.isSameOrStrongerThan(otherUnionGroup)) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		@Override
-		public int hashCode() {
-			return 31 + unionGroups.hashCode();
-		}
-
-		@Override
-		public boolean equals(final Object obj) {
-			if (this == obj) { 
-				return true; 
-			}
-
-			if (!(obj instanceof Group)) { 
-				return false; 
-			}
-
-			final Group other = (Group) obj;
-
-			if (unionGroups.size() != other.unionGroups.size()) {
-				return false;
-			}
-
-			// containsAll should be symmetric in this case
-			return unionGroups.containsAll(other.unionGroups);
-		}
-
-		public void adjustOrder(final Group other) {
-			if (unionGroups.isEmpty()) {
-				return;
-			}
-
-			final Map<Integer, UnionGroup> oldNumberMap = new Int2ObjectOpenHashMap<>(unionGroups.size());
-			for (final UnionGroup unionGroup : unionGroups) {
-				oldNumberMap.put(unionGroup.getUnionGroupNumber(), unionGroup);
-			}
-
-			final Map<UnionGroup, Integer> newNumberMap = new Object2IntOpenHashMap<>(unionGroups.size());
-			for (final UnionGroup unionGroup : unionGroups) {
-				final Optional<UnionGroup> otherUnionGroup = Iterables.tryFind(other.unionGroups, Predicates.equalTo(unionGroup));
-				if (otherUnionGroup.isPresent()) {
-					final int oldNumber = unionGroup.getUnionGroupNumber();
-					final int newNumber = otherUnionGroup.get().getUnionGroupNumber();
-
-					// If the current union group number is 0, it has a single relationship only, and should be kept that way
-					if (oldNumber != 0 && oldNumber != newNumber) {
-						newNumberMap.put(unionGroup, newNumber);
-					}
-				}
-			}
-
-			for (UnionGroup unionGroupToAdjust : newNumberMap.keySet()) {
-				final int oldNumber = unionGroupToAdjust.getUnionGroupNumber();
-				final int newNumber = newNumberMap.get(unionGroupToAdjust);
-
-				final UnionGroup swap = oldNumberMap.get(newNumber);
-				if (swap != null) {
-					swap.setUnionGroupNumber(oldNumber);
-					oldNumberMap.put(oldNumber, swap);
-				} else {
-					oldNumberMap.remove(oldNumber);
-				}
-
-				unionGroupToAdjust.setUnionGroupNumber(newNumber);
-				oldNumberMap.put(newNumber, unionGroupToAdjust);
-			}
-		}
-
-		public void fillNumbers() {
-			int unionGroupNumber = 1;
-
-			for (final UnionGroup unionGroup : unionGroups) {
-				if (unionGroup.getUnionGroupNumber() == NUMBER_NOT_PRESERVED) {
-					unionGroup.setUnionGroupNumber(unionGroupNumber++);
-				}
-			}
-		}
-
-		@Override
-		public String toString() {
-			final StringBuilder builder = new StringBuilder();
-			builder.append("Group [unionGroups=");
-			builder.append(unionGroups);
-			builder.append("]");
-			return builder.toString();
-		}
-	}
-
-	private static final class UnionGroup implements SemanticComparable<UnionGroup> {
-
-		private final List<RelationshipFragment> fragments;
-
-		private int unionGroupNumber = NUMBER_NOT_PRESERVED;
-
-		/**
-		 * Creates a new union group instance with the specified parameters,
-		 * preserving the union group number for later reference.
-		 * 
-		 * @param fragments
-		 *            the relationship fragments to associate with this union
-		 *            group (may not be <code>null</code>)
-		 */
-		public UnionGroup(final Iterable<RelationshipFragment> fragments) {
-			checkArgument(fragments != null, "fragments is null.");
-			this.fragments = ImmutableList.copyOf(fragments);
-		}
-
-		public List<RelationshipFragment> getRelationshipFragments() {
-			return fragments;
-		}
-
-		public int getUnionGroupNumber() {
-			return unionGroupNumber;
-		}
-
-		public void setUnionGroupNumber(final int unionGroupNumber) {
-			checkArgument(unionGroupNumber > NUMBER_NOT_PRESERVED, "Illegal union group number '%s'.", unionGroupNumber);
-			this.unionGroupNumber = unionGroupNumber;
-		}
-
-		@Override
-		public boolean isSameOrStrongerThan(final UnionGroup other) {
-
-			/*
-			 * Things same or stronger than A OR B OR C:
-			 *
-			 * - A' OR B OR C, where A' is a subclass of A
-			 * - B
-			 *
-			 * So we'll have to check for all of our fragments to see if a less
-			 * expressive fragment exists in the "other" union group. Points are
-			 * awarded if we manage to get away with less fragments than the
-			 * "other" union group.
-			 */
-			for (final RelationshipFragment ourFragment : fragments) {
-
-				boolean found = false;
-
-				for (final RelationshipFragment otherFragment : other.fragments) {
-
-					if (ourFragment.isSameOrStrongerThan(otherFragment)) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		@Override
-		public int hashCode() {
-			return 31 + fragments.hashCode();
-		}
-
-		@Override
-		public boolean equals(final Object obj) {
-			if (this == obj) { 
-				return true; 
-			}
-
-			if (!(obj instanceof UnionGroup)) { 
-				return false; 
-			}
-
-			final UnionGroup other = (UnionGroup) obj;
-
-			if (fragments.size() != other.fragments.size()) {
-				return false;
-			}
-
-			// containsAll should be symmetric in this case
-			return fragments.containsAll(other.fragments);
-		}
-
-		@Override
-		public String toString() {
-			final StringBuilder builder = new StringBuilder();
-			builder.append("UnionGroup [fragments=");
-			builder.append(fragments);
-			builder.append("]");
-			return builder.toString();
-		}
-	}
-
-	/**
-	 * Represents concept attribute-value pairs, used when relationships
-	 * originating from different sources are being processed.
-	 *
-	 * @author law223
-	 */
-	private final class RelationshipFragment implements SemanticComparable<RelationshipFragment> {
-
-		private final Relationship fragment;
-
-		/**
-		 * Creates a new relationship fragment from the specified relationship.
-		 *
-		 * @param fragment
-		 *            the relationship to extract attribute and value from (may
-		 *            not be <code>null</code>)
-		 *
-		 * @throws NullPointerException
-		 *             if the given relationship is <code>null</code>
-		 */
-		public RelationshipFragment(final Relationship fragment) {
-			this.fragment = checkNotNull(fragment, "fragment");
-		}
-
-		public boolean isDestinationNegated() {
-			return fragment.isDestinationNegated();
-		}
-
-
-		public boolean isUniversal() {
-			return fragment.isUniversal();
-		}
-
-		public long getTypeId() {
-			return fragment.getTypeId();
-		}
-
-
-		public long getDestinationId() {
-			return fragment.getDestinationId();
-		}
-
-
-		public long getStatementId() {
-			return fragment.getRelationshipId();
-		}
-
-
-		@Override
-		public boolean isSameOrStrongerThan(final RelationshipFragment other) {
-
-			if (this.equals(other)) {
-				return true;
-			}
-
-			if (isUniversal() != other.isUniversal()) {
-				return false;
-			}
-			
-			if (this.getTypeId() == 116680003L && other.getTypeId() == 116680003L) {
-				System.out.println("Two IS As compared");
-			}
-
-			if (!isDestinationNegated() && !other.isDestinationNegated()) {
-
-				/*
-				 * Things same or stronger than (some/all) rA:
-				 *
-				 * - (some/all) r'A, where r' is equal to r or is a descendant of r
-				 * - (some/all) rA', where A' is equal to A or is a descendant of A
-				 * - (some/all) r'A', where both of the above applies
-				 */
-				final Set<Long> attributeClosure = getConceptAndAllSuperTypes(getTypeId());
-				final Set<Long> valueClosure = getValueClosure(getDestinationId(), getTypeId());
-
-				return attributeClosure.contains(other.getTypeId()) && valueClosure.contains(other.getDestinationId());
-
-			} else if (isDestinationNegated() && !other.isDestinationNegated()) {
-
-				final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-				final Set<Long> superTypes = getValueClosure(getDestinationId(), getTypeId());
-				superTypes.remove(getDestinationId());
-
-				/*
-				 * Note that "other" itself may be exhaustive in this case --
-				 * the negation will work entirely within the confines of
-				 * "other", so it is still going to be more expressive than
-				 * "other".
-				 *
-				 * Supertypes of the negated value can only appear above the
-				 * "layers" of exhaustive concepts, because any other case
-				 * should be unsatisfiable.
-				 */
-				return otherAttributeClosure.contains(getTypeId()) && (hasCommonExhaustiveSuperType(other) || isDestinationExhaustive()) && superTypes.contains(other.getDestinationId());
-
-			} else if (!isDestinationNegated() && other.isDestinationNegated()) {
-
-				final Set<Long> attributeClosure = getConceptAndAllSuperTypes(getTypeId());
-
-				/*
-				 * Any contradictions should be filtered out by the reasoner beforehand, so we just check if the two concepts
-				 * have a common exhaustive ancestor.
-				 */
-				return attributeClosure.contains(other.getTypeId()) && hasCommonExhaustiveSuperType(other);
-
-			} else /* if (destinationNegated && other.destinationNegated) */ {
-
-				/*
-				 * Note that the comparison is the exact opposite of the first case - if both fragments are negated,
-				 * the one which negates a more loose definition is the one that is more strict in the end.
-				 */
-				final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-				final Set<Long> otherValueClosure = getValueClosure(other.getDestinationId(), other.getTypeId());
-
-				return otherAttributeClosure.contains(getTypeId()) && otherValueClosure.contains(getDestinationId());
-			}
-		}
-
-		private boolean isDestinationExhaustive() {
-			return isExhaustive(getDestinationId());
-		}
-
-		private boolean hasCommonExhaustiveSuperType(final RelationshipFragment other) {
-
-			final Set<Long> valueAncestors = reasonerTaxonomy.getAncestors(getDestinationId());
-			final Set<Long> otherValueAncestors = reasonerTaxonomy.getAncestors(other.getDestinationId());
-			final Set<Long> commonAncestors = Sets.intersection(valueAncestors, otherValueAncestors);
-
-			for (Long commonAncestor : commonAncestors) {
-				if (isExhaustive(commonAncestor)) {
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private boolean isExhaustive(final long conceptId) {
-			return snomedTaxonomy.isExhaustive(conceptId);
-		}
-
-		/**
-		 * Collects all parent concepts reachable from the specified concept. The
-		 * returned set also includes the starting concept.
-		 *
-		 * @param conceptId
-		 *            the concept to start from
-		 *
-		 * @return a set containing the starting concept and all reachable
-		 *         supertypes
-		 */
-		private Set<Long> getConceptAndAllSuperTypes(final long conceptId) {
-			final Set<Long> ancestors = reasonerTaxonomy.getAncestors(conceptId);
-			final Set<Long> conceptAndAncestors = new LongOpenHashSet(ancestors);
-			conceptAndAncestors.add(conceptId);
-			return conceptAndAncestors;
-		}
-
-		private Set<Long> getValueClosure(final long conceptId, final long typeId) {
-			Set<Long> closure = getConceptAndAllSuperTypes(conceptId);
-			if (allTransitiveProperties.contains(typeId)) {
-				closure.addAll(transitiveNodeGraphs.get(typeId).getAncestors(conceptId));
-				for (Long transitiveProperty : snomedTaxonomy.getSubTypeIds(typeId)) {
-					closure.addAll(transitiveNodeGraphs.get(transitiveProperty).getAncestors(conceptId));
-				}
-			}
-			return closure;
-		}
-
-		@Override
-		public boolean equals(final Object obj) {
-			if (this == obj) {
-				return true;
-			}
-
-			if (!(obj instanceof RelationshipFragment)) {
-				return false;
-			}
-
-			final RelationshipFragment other = (RelationshipFragment) obj;
-
-			return (isUniversal() == other.isUniversal()) &&
-					(isDestinationNegated() == other.isDestinationNegated()) &&
-					(getTypeId() == other.getTypeId()) &&
-					(getDestinationId() == other.getDestinationId());
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hashCode(isUniversal(), isDestinationNegated(), getTypeId(), getDestinationId());
-		}
-
-		@Override
-		public String toString() {
-			return MessageFormat.format("{0,number,#} : {1}{2,number,#} ({3})", getTypeId(), (isDestinationNegated() ? "NOT" : ""), getDestinationId(), isUniversal());
-		}
-	}
-
-	/**
-	 * Represents a set of groups that do not allow redundant elements.
-	 */
-	private static final class GroupSet extends AbstractSet<Group> {
-
-		private final List<Group> groups = Lists.newArrayList();
-
-		/**
-		 * Adds the specified group to this set if it is not already present.
-		 * More formally, adds the specified group e to this set if the set
-		 * contains no group e2 such that e2.isSameOrStrongerThan(e). If this
-		 * set already contains such group, the call leaves the set unchanged and
-		 * returns <code>false</code>. If no group contains the specified group,
-		 * the call removes all groups ei from the set where
-		 * e.isSameOrStrongerThan(ei) applies, adds the new element, and returns
-		 * <code>true</code>.
-		 */
-		@Override
-		public boolean add(final Group e) {
-			final List<Group> redundant = Lists.newArrayList();
-
-			for (final Group existingGroup : groups) {
-				if (existingGroup.isSameOrStrongerThan(e)) {
-					return false;
-				} else if (e.isSameOrStrongerThan(existingGroup)) {
-					redundant.add(existingGroup);
-				}
-			}
-
-			groups.removeAll(redundant);
-			groups.add(e);
-
-			return true;
-		}
-
-		/**
-		 * Adds a group to the set, bypassing redundancy checks.
-		 * 
-		 * @see #add(Group)
-		 */
-		public boolean addUnique(final Group e) {
-			return groups.add(e);
-		}
-
-		@Override
-		public Iterator<Group> iterator() {
-			return groups.iterator();
-		}
-
-		@Override
-		public int size() {
-			return groups.size();
-		}
-
-		public void adjustOrder(final GroupSet other) {
-			if (isEmpty()) {
-				return;
-			}
-
-			final Map<Integer, Group> oldNumberMap = new Int2ObjectOpenHashMap<>(groups.size());
-			for (final Group group : groups) {
-				oldNumberMap.put(group.getGroupNumber(), group);
-			}
-
-			final Map<Group, Integer> newNumberMap = new Object2IntOpenHashMap<>(groups.size());
-			for (final Group group : groups) {
-				final Optional<Group> otherGroup = Iterables.tryFind(other.groups, Predicates.equalTo(group));
-				if (otherGroup.isPresent()) {
-					final int oldNumber = group.getGroupNumber();
-					final int newNumber = otherGroup.get().getGroupNumber();
-
-					// If the current group number is 0, it has a single relationship only, and should be kept that way
-					if (oldNumber != 0 && oldNumber != newNumber) {
-						newNumberMap.put(group, newNumber);
-						group.adjustOrder(otherGroup.get());
-					}
-				}
-			}
-
-			for (Group groupToAdjust : newNumberMap.keySet()) {
-				final int oldNumber = groupToAdjust.getGroupNumber();
-				final int newNumber = newNumberMap.get(groupToAdjust);
-
-				final Group swap = oldNumberMap.get(newNumber);
-				if (swap != null) {
-					swap.setGroupNumber(oldNumber);
-					oldNumberMap.put(oldNumber, swap);
-				} else {
-					oldNumberMap.remove(oldNumber);
-				}
-
-				groupToAdjust.setGroupNumber(newNumber);
-				oldNumberMap.put(newNumber, groupToAdjust);
-			}
-		}
-
-		public void fillNumbers() {
-			int groupNumber = 1;
-
-			for (final Group group : groups) {
-				group.fillNumbers();
-
-				/* 
-				 * Group numbers will already be set on existing inferred relationship groups and 0 groups.
-				 */
-				if (group.getGroupNumber() == NUMBER_NOT_PRESERVED) {
-					group.setGroupNumber(groupNumber++);
-				}
-			}
-		}
-	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipNormalFormGenerator.class);
 
@@ -654,7 +57,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	 * should be used when the fragments in this group/union group are converted into
 	 * relationships.
 	 */
-	private static final int NUMBER_NOT_PRESERVED = -1;
+	public static final int NUMBER_NOT_PRESERVED = -1;
 
 	private static final int ZERO_GROUP = 0;
 
@@ -668,7 +71,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	 * Creates a new distribution normal form generator instance.
 	 *
 	 * @param reasonerTaxonomy the reasoner to extract results from (may not be {@code null})
-	 * @param propertiesDeclaredAsTransitive
+	 * @param snomedTaxonomy the taxonomy as it existed before this classification run (may not be {@code null})
+	 * @param propertiesDeclaredAsTransitive the identifiers of properties declared as having transitive behaviour
 	 */
 	public RelationshipNormalFormGenerator(final ReasonerTaxonomy reasonerTaxonomy, final SnomedTaxonomy snomedTaxonomy, Set<Long> propertiesDeclaredAsTransitive) {
 		super(reasonerTaxonomy, snomedTaxonomy, propertiesDeclaredAsTransitive);
@@ -694,6 +98,25 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 			transitiveNodeGraphs.get(r.getTypeId()).addParent(conceptId, r.getDestinationId());
 			conceptsWithTransitiveAttributes.add(conceptId);
 		});
+	}
+
+	@Override
+	public Collection<Relationship> secondNormalisationPass(final long conceptId) {
+		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
+
+		// Step 1: create IS-A relationships
+		final Iterable<Relationship> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
+
+		Iterable<Relationship> inferredNonIsAFragments;
+		inferredNonIsAFragments = generatedNonIsACache.get(conceptId);
+		for (Relationship inferredNonIsAFragment : inferredNonIsAFragments) {
+			if (conceptsWithTransitiveAttributes.contains(inferredNonIsAFragment.getDestinationId())) {
+				inferredNonIsAFragments = getInferredNonIsAFragmentsInNormalForm(conceptId);
+				break;
+			}
+		}
+
+		return ImmutableList.copyOf(Iterables.concat(inferredIsAFragments, inferredNonIsAFragments));
 	}
 
 	private Iterable<Relationship> getInferredNonIsAFragmentsInNormalForm(long conceptId) {
@@ -746,35 +169,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 	 * </li>
 	 * </ol>
 	 *
-	 * @return a collection of outbound relationships for the specified concept in distribution normal form
 	 */
-	@Override
-	public Collection<Relationship> secondNormalisationPass(final long conceptId) {
-		final Set<Long> directSuperTypes = reasonerTaxonomy.getParents(conceptId);
-
-		// Step 1: create IS-A relationships
-		final Iterable<Relationship> inferredIsAFragments = getInferredIsAFragments(conceptId, directSuperTypes);
-
-		Iterable<Relationship> inferredNonIsAFragments;
-		inferredNonIsAFragments = generatedNonIsACache.get(conceptId);
-		for (Relationship inferredNonIsAFragment : inferredNonIsAFragments) {
-			if (conceptsWithTransitiveAttributes.contains(inferredNonIsAFragment.getDestinationId())) {
-				inferredNonIsAFragments = getInferredNonIsAFragmentsInNormalForm(conceptId);
-				break;
-			}
-		}
-
-		return ImmutableList.copyOf(Iterables.concat(inferredIsAFragments, inferredNonIsAFragments));
-	}
-
-	private Collection<Relationship> getCachedNonIsAFragments(final long directSuperTypeId) {
-		return generatedNonIsACache.get(directSuperTypeId);
-	}
-
-	private Iterable<Relationship> getInferredIsAFragments(final long conceptId, final Set<Long> parentIds) {
-		return parentIds.stream().map(parentId -> new Relationship(IS_A_LONG, parentId)).collect(Collectors.toSet());
-	}
-
 	private Iterable<Relationship> getInferredNonIsAFragments(long conceptId,
 															  final Collection<Relationship> ownInferredNonIsAFragments,
 															  final Collection<Relationship> ownStatedNonIsAFragments,
@@ -801,11 +196,19 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		// The remaining non-redundant groups should be numbered from 1
 		groups.fillNumbers();
 
-		// Shuffle around the numbers to match existing inferred group numbers as much as possible 
+		// Shuffle around the numbers to match existing inferred group numbers as much as possible
 		groups.adjustOrder(inferredGroups);
 
 		// Convert groups back to individual statement fragments
 		return fromGroupSet(groups);
+	}
+
+	private Collection<Relationship> getCachedNonIsAFragments(final long directSuperTypeId) {
+		return generatedNonIsACache.get(directSuperTypeId);
+	}
+
+	private Iterable<Relationship> getInferredIsAFragments(final long conceptId, final Set<Long> parentIds) {
+		return parentIds.stream().map(parentId -> new Relationship(IS_A_LONG, parentId)).collect(Collectors.toSet());
 	}
 
 	private Iterable<Group> toGroups(final boolean preserveNumbers, final Collection<Relationship> nonIsARelationshipFragments) {
@@ -885,7 +288,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		return FluentIterable.from(values).transform(new Function<Relationship, UnionGroup>() {
 			@Override
 			public UnionGroup apply(final Relationship input) {
-				final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(input)));
+				final UnionGroup unionGroup = new UnionGroup(ImmutableList.of(new RelationshipFragment(RelationshipNormalFormGenerator.this, input)));
 				unionGroup.setUnionGroupNumber(ZERO_GROUP);
 				return unionGroup;
 			}
@@ -896,7 +299,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		final Iterable<RelationshipFragment> fragments = FluentIterable.from(values).transform(new Function<Relationship, RelationshipFragment>() {
 			@Override
 			public RelationshipFragment apply(final Relationship input) {
-				return new RelationshipFragment(input);
+				return new RelationshipFragment(RelationshipNormalFormGenerator.this, input);
 			}
 		});
 
@@ -989,11 +392,26 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 				.collect(Collectors.toSet());
 	}
 
-	public final int collectNormalFormChanges(final OntologyChangeProcessor<Relationship> processor) {
+	public final void collectNormalFormChanges(final OntologyChangeProcessor<Relationship> processor) {
 		LOGGER.info(">>> Relationship normal form generation");
 		final Stopwatch stopwatch = Stopwatch.createStarted();
 		final int results = collectNormalFormChanges(processor, StatementFragmentOrdering.INSTANCE);
 		LOGGER.info(MessageFormat.format("<<< Relationship normal form generation [{0}]", stopwatch.toString()));
-		return results;
+	}
+
+	public ReasonerTaxonomy getReasonerTaxonomy() {
+		return reasonerTaxonomy;
+	}
+
+	public SnomedTaxonomy getSnomedTaxonomy() {
+		return snomedTaxonomy;
+	}
+
+	public Set<Long> getAllTransitiveProperties() {
+		return allTransitiveProperties;
+	}
+
+	public Map<Long, NodeGraph> getTransitiveNodeGraphs() {
+		return transitiveNodeGraphs;
 	}
 }
