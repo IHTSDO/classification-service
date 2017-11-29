@@ -2,9 +2,11 @@ Snomed Classification Service
 ====================================
 
 ## Overview
-A standalone service for the classification of SNOMED CT ontologies. 
+An open source standalone service for the classification of SNOMED CT ontologies. 
 
-The service takes an RF2 Snapshot archive and RF2 Delta archive and produces RF2-like results to be further processed by a terminology server. 
+This service is used for the maintenance of the International release and will be kept up to date with all discription logic enhancements as they are introduced. It is also backward compatible with all historic RF2 releases.
+
+The service takes an RF2 Snapshot archive of a release and an RF2 Delta archive of subsequent changes and produces RF2-like results to be further processed by a terminology server. 
 
 ## Quick Start
 Use Maven to build the executable jar and run:
