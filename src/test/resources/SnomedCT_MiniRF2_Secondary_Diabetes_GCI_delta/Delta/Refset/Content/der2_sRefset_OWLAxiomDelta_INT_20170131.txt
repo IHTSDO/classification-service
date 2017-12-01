@@ -15,33 +15,33 @@ id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
 # Here is a more human readable version:
 # SubClassOf(
 #    ObjectIntersectionOf(
-#        :concept_73211009 - Diabetes mellitus
+#        :73211009 - Diabetes mellitus
 #        ObjectSomeValuesFrom(
 #            :roleGroup
 #            ObjectSomeValuesFrom(
-#                :role_100105001 - Causative agent
-#                :concept_100101001 - Drug
+#                :100105001 - Causative agent
+#                :100101001 - Drug
 #            )
 #        )
 #    )
-#    :concept_8801005 - Secondary diabetes mellitus
+#    :8801005 - Secondary diabetes mellitus
 #)
-b046530d-aede-4751-9ecd-b50e908b66c5	20170131	1	900000000000207008	733073007	8801005	SubClassOf(ObjectIntersectionOf(:concept_73211009 ObjectSomeValuesFrom(:roleGroup ObjectSomeValuesFrom(:role_100105001 :concept_100101001))) :concept_8801005)
+b046530d-aede-4751-9ecd-b50e908b66c5	20170131	1	900000000000207008	733073007	8801005	SubClassOf(ObjectIntersectionOf(:73211009 ObjectSomeValuesFrom(:roleGroup ObjectSomeValuesFrom(:100105001 :100101001))) :8801005)
 
 # The following OWL Axiom states that "Diabetes mellitus" due to "Cystic fibrosis" is a type of "Secondary diabetes mellitus"
 #
 # Here is a more human readable version:
 # SubClassOf(
 #    ObjectIntersectionOf(
-#        :concept_73211009 - Diabetes mellitus
+#        :73211009 - Diabetes mellitus
 #        ObjectSomeValuesFrom(
 #            :roleGroup
 #            ObjectSomeValuesFrom(
-#                :role_100106001 - Due to
-#                :concept_100102001 - Cystic fibrosis
+#                :100106001 - Due to
+#                :100102001 - Cystic fibrosis
 #            )
 #        )
 #    )
-#    :concept_8801005 - Secondary diabetes mellitus
+#    :8801005 - Secondary diabetes mellitus
 #)
-e35258b4-15d8-4fb2-bea5-dcc6b5e7de62	20170131	1	900000000000207008	733073007	8801005	SubClassOf(ObjectIntersectionOf(:concept_73211009 ObjectSomeValuesFrom(:roleGroup ObjectSomeValuesFrom(:role_100106001 :concept_100102001))) :concept_8801005)
+e35258b4-15d8-4fb2-bea5-dcc6b5e7de62	20170131	1	900000000000207008	733073007	8801005	SubClassOf(ObjectIntersectionOf(:73211009 ObjectSomeValuesFrom(:roleGroup ObjectSomeValuesFrom(:100106001 :100102001))) :8801005)

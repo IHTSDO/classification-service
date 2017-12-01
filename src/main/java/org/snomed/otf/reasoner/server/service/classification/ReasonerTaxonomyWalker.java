@@ -16,6 +16,7 @@
 package org.snomed.otf.reasoner.server.service.classification;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
@@ -193,11 +194,10 @@ public class ReasonerTaxonomyWalker {
 	}
 
 	private boolean isConceptClass(final OWLClass owlClass) {
-		return prefixManager.getShortForm(owlClass.getIRI()).startsWith(OntologyService.SNOMED_CONCEPT);
+		return owlClass.getIRI().toString().startsWith(OntologyService.SNOMED_IRI);
 	}
 
 	private long getConceptId(final OWLClass owlClass) {
-		String shortForm = prefixManager.getShortForm(owlClass.getIRI());
-		return Long.parseLong(shortForm.substring(shortForm.indexOf("_") + 1, shortForm.length()));
+		return Long.parseLong(owlClass.getIRI().toString().substring(OntologyService.SNOMED_IRI.length()));
 	}
 }

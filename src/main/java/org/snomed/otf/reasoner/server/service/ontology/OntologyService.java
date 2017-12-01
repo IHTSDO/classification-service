@@ -19,12 +19,11 @@ import static java.lang.Long.parseLong;
 public class OntologyService {
 
 	public static final String SNOMED_IRI = "http://snomed.info/id/";
-	public static final String SNOMED = "snomed:";
-	public static final String SNOMED_CONCEPT = SNOMED + "concept_";
-	public static final String ROLE = "role_";
-	public static final String SNOMED_ROLE = SNOMED + ROLE;
-	public static final String SNOMED_ROLE_GROUP = SNOMED + "roleGroup";
-	public static final String SNOMED_ROLE_HAS_MEASUREMENT = SNOMED + "roleHasMeasurement";
+	public static final String SNOMED_PREFIX = ":";
+	public static final String SNOMED_CONCEPT = SNOMED_PREFIX + "";
+	public static final String SNOMED_ROLE = SNOMED_PREFIX + "";
+	public static final String SNOMED_ROLE_GROUP = SNOMED_PREFIX + "roleGroup";
+	public static final String SNOMED_ROLE_HAS_MEASUREMENT = SNOMED_PREFIX + "roleHasMeasurement";
 
 	public static final Set<Long> NEVER_GROUPED_ROLE_IDS = Sets.newHashSet(
 			parseLong(Concepts.ALL_OR_PART_OF),
@@ -43,7 +42,7 @@ public class OntologyService {
 		manager = OWLManager.createOWLOntologyManager();
 		factory = new OWLDataFactoryImpl();
 		prefixManager = new DefaultPrefixManager();
-		prefixManager.setPrefix(SNOMED, SNOMED_IRI);
+		prefixManager.setPrefix(SNOMED_PREFIX, SNOMED_IRI);
 	}
 
 	public OWLOntology createOntology(SnomedTaxonomy snomedTaxonomy) throws OWLOntologyCreationException {
@@ -131,8 +130,7 @@ public class OntologyService {
 		Set<Long> transitiveProperties = new HashSet<>();
 		Set<OWLTransitiveObjectPropertyAxiom> transitiveObjectPropertyAxioms = owlOntology.getAxioms(AxiomType.TRANSITIVE_OBJECT_PROPERTY);
 		for (OWLTransitiveObjectPropertyAxiom transitiveObjectPropertyAxiom : transitiveObjectPropertyAxioms) {
-			String shortForm = transitiveObjectPropertyAxiom.getProperty().getNamedProperty().getIRI().getShortForm();
-			String propertyIdString = shortForm.replace(ROLE, "");
+			String propertyIdString = transitiveObjectPropertyAxiom.getProperty().getNamedProperty().getIRI().getShortForm();
 			transitiveProperties.add(Long.parseLong(propertyIdString));
 		}
 
