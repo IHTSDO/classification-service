@@ -77,6 +77,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		super(reasonerTaxonomy, snomedTaxonomy, propertiesDeclaredAsTransitive);
 
 		// Initialise node graphs for each transitive property
+		LOGGER.info("Initialising node graphs for transitive properties {}", allTransitiveProperties);
 		allTransitiveProperties.forEach(id -> transitiveNodeGraphs.put(id, new NodeGraph()));
 	}
 

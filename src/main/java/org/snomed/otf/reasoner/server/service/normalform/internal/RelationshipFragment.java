@@ -3,8 +3,11 @@ package org.snomed.otf.reasoner.server.service.normalform.internal;
 import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
+import org.snomed.otf.reasoner.server.service.normalform.transitive.NodeGraph;
 
 import java.text.MessageFormat;
 import java.util.Set;
@@ -19,6 +22,8 @@ public final class RelationshipFragment implements SemanticComparable<Relationsh
 
 	private RelationshipNormalFormGenerator relationshipNormalFormGenerator;
 	private final Relationship fragment;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RelationshipFragment.class);
 
 	/**
 	 * Creates a new relationship fragment from the specified relationship.
@@ -174,7 +179,12 @@ public final class RelationshipFragment implements SemanticComparable<Relationsh
 		if (relationshipNormalFormGenerator.getAllTransitiveProperties().contains(typeId)) {
 			closure.addAll(relationshipNormalFormGenerator.getTransitiveNodeGraphs().get(typeId).getAncestors(conceptId));
 			for (Long transitiveProperty : relationshipNormalFormGenerator.getSnomedTaxonomy().getSubTypeIds(typeId)) {
-				closure.addAll(relationshipNormalFormGenerator.getTransitiveNodeGraphs().get(transitiveProperty).getAncestors(conceptId));
+				NodeGraph nodeGraph = relationshipNormalFormGenerator.getTransitiveNodeGraphs().get(transitiveProperty);
+				if (nodeGraph != null) {
+					closure.addAll(nodeGraph.getAncestors(conceptId));
+				} else {
+					LOGGER.warn("No transitive node graph for attribute {} despite being a subtype of {}", transitiveProperty, typeId);
+				}
 			}
 		}
 		return closure;
