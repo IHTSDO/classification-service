@@ -124,6 +124,19 @@ public class SnomedTaxonomy {
 		return longs != null ? longs : Collections.emptySet();
 	}
 
+	public Set<Long> getAncestorIds(long conceptId) {
+		return getAncestorIds(conceptId, new LongOpenHashSet());
+	}
+
+	private Set<Long> getAncestorIds(long conceptId, Set<Long> ids) {
+		Set<Long> subTypeIds = getSubTypeIds(conceptId);
+		ids.addAll(subTypeIds);
+		for (Long subTypeId : subTypeIds) {
+			getAncestorIds(subTypeId, ids);
+		}
+		return ids;
+	}
+
 	public boolean isExhaustive(long conceptId) {
 		// TODO: is this always false?
 		return false;
