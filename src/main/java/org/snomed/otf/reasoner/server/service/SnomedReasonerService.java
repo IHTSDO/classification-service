@@ -133,7 +133,9 @@ public class SnomedReasonerService {
 		Set<Long> ungroupedRoles = snomedTaxonomy.getUngroupedRolesForContentType(parseLong(Concepts.ALL_PRECOORDINATED_CONTENT));
 		if (ungroupedRoles.isEmpty()) {
 			ungroupedRoles = SnomedTaxonomy.DEFAULT_NEVER_GROUPED_ROLE_IDS;
-			logger.info("Using default ungrouped attributes {}", ungroupedRoles);
+			logger.info("Using ungrouped roles defaults {}", ungroupedRoles);
+		} else {
+			logger.info("Using ungrouped roles from MRCM reference set {}", ungroupedRoles);
 		}
 
 		//TODO Temporary code to write taxonomy out to disk so we can check if the delta was correctly applied
