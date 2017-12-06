@@ -1,7 +1,6 @@
 package org.snomed.otf.reasoner.server.service.normalform;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-
 import org.snomed.otf.reasoner.server.service.constants.SnomedConstants;
 import org.snomed.otf.reasoner.server.service.data.Relationship;
 

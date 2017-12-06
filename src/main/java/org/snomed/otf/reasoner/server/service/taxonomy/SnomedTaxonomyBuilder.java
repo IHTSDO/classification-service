@@ -9,6 +9,7 @@ import org.springframework.util.StopWatch;
 
 import java.io.InputStream;
 
+import static org.snomed.otf.reasoner.server.service.constants.Concepts.MRCM_ATTRIBUTE_DOMAIN_INTERNATIONAL_REFERENCE_SET;
 import static org.snomed.otf.reasoner.server.service.constants.Concepts.OWL_AXIOM_REFERENCE_SET;
 
 public class SnomedTaxonomyBuilder {
@@ -19,6 +20,7 @@ public class SnomedTaxonomyBuilder {
 			.withStatedRelationships()
 			.withFullRelationshipObjects()
 			.withRefset(OWL_AXIOM_REFERENCE_SET)
+			.withRefset(MRCM_ATTRIBUTE_DOMAIN_INTERNATIONAL_REFERENCE_SET)
 			.withFullRefsetMemberObjects()
 			.withoutDescriptions();
 

@@ -10,6 +10,7 @@ import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomy;
 import org.snomed.otf.reasoner.server.service.classification.ReasonerTaxonomyWalker;
+import org.snomed.otf.reasoner.server.service.constants.Concepts;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipChangeCollector;
 import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormGenerator;
 import org.snomed.otf.reasoner.server.service.ontology.OntologyDebugUtil;
@@ -22,13 +23,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import static java.lang.Long.parseLong;
 
 @Service
 public class SnomedReasonerService {
@@ -124,6 +130,12 @@ public class SnomedReasonerService {
 		SnomedTaxonomyBuilder snomedTaxonomyBuilder = new SnomedTaxonomyBuilder();
 		SnomedTaxonomy snomedTaxonomy = snomedTaxonomyBuilder.build(previousReleaseRf2SnapshotArchive, currentReleaseRf2DeltaArchive);
 
+		Set<Long> ungroupedRoles = snomedTaxonomy.getUngroupedRolesForContentType(parseLong(Concepts.ALL_PRECOORDINATED_CONTENT));
+		if (ungroupedRoles.isEmpty()) {
+			ungroupedRoles = SnomedTaxonomy.DEFAULT_NEVER_GROUPED_ROLE_IDS;
+			logger.info("Using default ungrouped attributes {}", ungroupedRoles);
+		}
+
 		//TODO Temporary code to write taxonomy out to disk so we can check if the delta was correctly applied
 		/*File tempDir = Files.createTempDir();
 		logger.info("Saving existing taxonomy to {}", tempDir.getAbsolutePath());
@@ -131,7 +143,7 @@ public class SnomedReasonerService {
 		snomedTaxonomy.debugDumpToDisk(tempDir, df.format(new Date()) "20170731"); */
 
 		logger.info("Creating OwlOntology");
-		OntologyService ontologyService = new OntologyService();
+		OntologyService ontologyService = new OntologyService(ungroupedRoles);
 		OWLOntology owlOntology = ontologyService.createOntology(snomedTaxonomy);
 		Set<Long> propertiesDeclaredAsTransitive = ontologyService.getPropertiesDeclaredAsTransitive(owlOntology);
 

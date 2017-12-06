@@ -15,9 +15,9 @@
  */
 package org.snomed.otf.reasoner.server.service.normalform;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.Serializable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Represents an arbitrary change in the ontology. 

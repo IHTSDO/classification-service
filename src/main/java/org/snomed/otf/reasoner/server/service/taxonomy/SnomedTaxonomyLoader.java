@@ -113,6 +113,15 @@ public class SnomedTaxonomyLoader extends ImpotentComponentFactory {
 				// Match by id rather than a deserialised representation because the equals method may fail.
 				snomedTaxonomy.removeAxiom(referencedComponentId, id);
 			}
+		} else if (refsetId.equals(Concepts.MRCM_ATTRIBUTE_DOMAIN_INTERNATIONAL_REFERENCE_SET)) {
+			long attributeId = parseLong(referencedComponentId);
+			boolean ungrouped = otherValues[1].equals("0");
+			Long contentTypeId = parseLong(otherValues[5]);
+			if (ACTIVE.equals(active) && ungrouped) {
+				snomedTaxonomy.addUngroupedRole(contentTypeId, attributeId);
+			} else {
+				snomedTaxonomy.removeUngroupedRole(contentTypeId, attributeId);
+			}
 		}
 	}
 

@@ -1,5 +1,6 @@
 package org.snomed.otf.reasoner.server.service.taxonomy;
 
+import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.semanticweb.owlapi.model.OWLAxiom;
@@ -25,6 +26,14 @@ public class SnomedTaxonomy {
 	private Map<Long, Set<Relationship>> conceptInferredRelationshipMap = new Long2ObjectOpenHashMap<>();
 	private Map<Long, Set<OWLAxiom>> conceptAxiomMap = new Long2ObjectOpenHashMap<>();
 	private Map<Long, Set<Long>> statedSubTypesMap = new Long2ObjectOpenHashMap<>();
+	private Map<Long, Set<Long>> ungroupedRolesByContentType = new HashMap<>();
+
+	public static final Set<Long> DEFAULT_NEVER_GROUPED_ROLE_IDS = Collections.unmodifiableSet(Sets.newHashSet(
+			parseLong(Concepts.PART_OF),
+			parseLong(Concepts.LATERALITY),
+			parseLong(Concepts.HAS_ACTIVE_INGREDIENT),
+			parseLong(Concepts.HAS_DOSE_FORM)
+	));
 
 	public boolean isPrimitive(Long conceptId) {
 		return !fullyDefinedConceptIds.contains(conceptId);
@@ -124,15 +133,15 @@ public class SnomedTaxonomy {
 		return longs != null ? longs : Collections.emptySet();
 	}
 
-	public Set<Long> getAncestorIds(long conceptId) {
-		return getAncestorIds(conceptId, new LongOpenHashSet());
+	public Set<Long> getDescendants(long conceptId) {
+		return getDescendants(conceptId, new LongOpenHashSet());
 	}
 
-	private Set<Long> getAncestorIds(long conceptId, Set<Long> ids) {
+	private Set<Long> getDescendants(long conceptId, Set<Long> ids) {
 		Set<Long> subTypeIds = getSubTypeIds(conceptId);
 		ids.addAll(subTypeIds);
 		for (Long subTypeId : subTypeIds) {
-			getAncestorIds(subTypeId, ids);
+			getDescendants(subTypeId, ids);
 		}
 		return ids;
 	}
@@ -182,6 +191,31 @@ public class SnomedTaxonomy {
 		}
 	}
 
+	public void addUngroupedRole(Long contentType, Long attributeId) {
+		ungroupedRolesByContentType.computeIfAbsent(contentType, type -> new HashSet<>()).add(attributeId);
+	}
+
+	public void removeUngroupedRole(Long contentType, Long attributeId) {
+		Set<Long> ungrouped = ungroupedRolesByContentType.get(contentType);
+		if (ungrouped != null) {
+			ungrouped.remove(attributeId);
+		}
+	}
+
+	public Map<Long, Set<Long>> getUngroupedRolesByContentType() {
+		return ungroupedRolesByContentType;
+	}
+
+	public Set<Long> getUngroupedRolesForContentType(Long contentTypeId) {
+		Set<Long> subTypeIds = getSubTypeIds(contentTypeId);
+		Set<Long> ungrouped = new HashSet<>();
+		for (Long subTypeId : subTypeIds) {
+			ungrouped.addAll(ungroupedRolesByContentType.getOrDefault(subTypeId, new HashSet<>()));
+		}
+		ungrouped.addAll(ungroupedRolesByContentType.getOrDefault(contentTypeId, new HashSet<>()));
+		return ungrouped;
+	}
+
 	public Map<Long, Set<OWLAxiom>> getConceptAxiomMap() {
 		return conceptAxiomMap;
 	}
@@ -228,5 +262,4 @@ public class SnomedTaxonomy {
 			}
 		}
 	}
-
 }

@@ -1,6 +1,5 @@
 package org.snomed.otf.reasoner.server.service.ontology;
 
-import com.google.common.collect.Sets;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
@@ -14,8 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static java.lang.Long.parseLong;
-
 public class OntologyService {
 
 	public static final String SNOMED_IRI = "http://snomed.info/id/";
@@ -25,20 +22,13 @@ public class OntologyService {
 	public static final String SNOMED_ROLE_GROUP = SNOMED_PREFIX + "roleGroup";
 	public static final String SNOMED_ROLE_HAS_MEASUREMENT = SNOMED_PREFIX + "roleHasMeasurement";
 
-	public static final Set<Long> NEVER_GROUPED_ROLE_IDS = Sets.newHashSet(
-			parseLong(Concepts.ALL_OR_PART_OF),
-			parseLong(Concepts.PART_OF),
-			parseLong(Concepts.LATERALITY),
-			parseLong(Concepts.HAS_DOSE_FORM),
-			parseLong(Concepts.HAS_ACTIVE_INGREDIENT),
-			parseLong(Concepts.IS_MODIFICATION_OF)
-	);
-
 	private final OWLOntologyManager manager;
 	private OWLDataFactory factory;
 	private DefaultPrefixManager prefixManager;
+	private final Set<Long> ungroupedAttributes;
 
-	public OntologyService() {
+	public OntologyService(Set<Long> ungroupedAttributes) {
+		this.ungroupedAttributes = ungroupedAttributes;
 		manager = OWLManager.createOWLOntologyManager();
 		factory = new OWLDataFactoryImpl();
 		prefixManager = new DefaultPrefixManager();
@@ -73,7 +63,7 @@ public class OntologyService {
 				if (typeId == Concepts.IS_A_LONG) {
 					terms.add(getOwlClass(destinationId));
 				} else if (group == 0) {
-					if (NEVER_GROUPED_ROLE_IDS.contains(typeId)) {
+					if (ungroupedAttributes.contains(typeId)) {
 						// Special cases
 						terms.add(getOwlObjectSomeValuesFrom(typeId, destinationId));
 					} else {

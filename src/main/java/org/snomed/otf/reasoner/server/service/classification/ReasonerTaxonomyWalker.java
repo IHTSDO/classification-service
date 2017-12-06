@@ -16,7 +16,6 @@
 package org.snomed.otf.reasoner.server.service.classification;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;

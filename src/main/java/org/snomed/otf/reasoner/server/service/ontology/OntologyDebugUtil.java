@@ -1,6 +1,5 @@
 package org.snomed.otf.reasoner.server.service.ontology;
 
-import com.google.common.base.Strings;
 import org.semanticweb.owlapi.functional.renderer.OWLFunctionalSyntaxRenderer;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.model.OWLOntology;

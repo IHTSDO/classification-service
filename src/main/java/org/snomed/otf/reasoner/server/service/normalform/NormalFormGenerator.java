@@ -48,7 +48,7 @@ public abstract class NormalFormGenerator<T> {
 
 		// Make sure that the sub types of the attributes declared as transitive are also recognised
 		for (Long transitivePropertyId : propertiesDeclaredAsTransitive) {
-			allTransitiveProperties.addAll(snomedTaxonomy.getAncestorIds(transitivePropertyId));
+			allTransitiveProperties.addAll(snomedTaxonomy.getDescendants(transitivePropertyId));
 		}
 		this.allTransitiveProperties = allTransitiveProperties;
 	}
