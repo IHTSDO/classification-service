@@ -39,12 +39,17 @@ public class PropertyChainClassificationIntegrationTest {
 
 		// Assert results
 		List<String> lines = readInferredRelationshipLinesTrim(results);
-		assertEquals(4, lines.size());
+		assertEquals(3, lines.size());
 
-		assertTrue("Inferred relationship. Morphine sulphate product - Has active ingredient - Morphine substance",
+		// This relationship is inferred by the property chain and leads to 'Morphine sulphate product' being subsumed by 'Morphine product'
+		// however it should not be part of the normal form because:
+		// although 'Morphine substance' is NOT a subclass of 'Morphine sulphate substance'
+		// it is a modification of 'Morphine sulphate substance'
+		// 'Is modification of' is a transitive attribute
+		// This makes the stated relationships "Morphine sulphate product - Has active ingredient - Morphine sulphate substance" more specific.
+		// This makes the relationship "Morphine sulphate product - Has active ingredient - Morphine substance" redundant.
+		assertFalse("Inferred relationship. Morphine sulphate product - Has active ingredient - Morphine substance",
 				lines.contains("1\t\t100206001\t100202001\t0\t127489000\t900000000000011006\t900000000000451002"));
-
-		// The inference above is a direct result of the property chain!
 
 		assertTrue("Inferred relationship. Morphine sulphate product - Is a - Morphine product",
 				lines.contains("1\t\t100206001\t100205001\t0\t116680003\t900000000000011006\t900000000000451002"));

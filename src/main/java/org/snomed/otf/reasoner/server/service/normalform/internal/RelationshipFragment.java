@@ -10,6 +10,7 @@ import org.snomed.otf.reasoner.server.service.normalform.RelationshipNormalFormG
 import org.snomed.otf.reasoner.server.service.normalform.transitive.NodeGraph;
 
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -89,14 +90,14 @@ public final class RelationshipFragment implements SemanticComparable<Relationsh
 			 * - (some/all) r'A', where both of the above applies
 			 */
 			final Set<Long> attributeClosure = getConceptAndAllSuperTypes(getTypeId());
-			final Set<Long> valueClosure = getValueClosure(getDestinationId(), getTypeId());
+			final Set<Long> valueClosure = getValueClosure(getDestinationId());
 
 			return attributeClosure.contains(other.getTypeId()) && valueClosure.contains(other.getDestinationId());
 
 		} else if (isDestinationNegated() && !other.isDestinationNegated()) {
 
 			final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-			final Set<Long> superTypes = getValueClosure(getDestinationId(), getTypeId());
+			final Set<Long> superTypes = getValueClosure(getDestinationId());
 			superTypes.remove(getDestinationId());
 
 			/*
@@ -128,7 +129,7 @@ public final class RelationshipFragment implements SemanticComparable<Relationsh
 			 * the one which negates a more loose definition is the one that is more strict in the end.
 			 */
 			final Set<Long> otherAttributeClosure = getConceptAndAllSuperTypes(other.getTypeId());
-			final Set<Long> otherValueClosure = getValueClosure(other.getDestinationId(), other.getTypeId());
+			final Set<Long> otherValueClosure = getValueClosure(other.getDestinationId());
 
 			return otherAttributeClosure.contains(getTypeId()) && otherValueClosure.contains(getDestinationId());
 		}
@@ -174,18 +175,12 @@ public final class RelationshipFragment implements SemanticComparable<Relationsh
 		return conceptAndAncestors;
 	}
 
-	private Set<Long> getValueClosure(final long conceptId, final long typeId) {
+	private Set<Long> getValueClosure(final long conceptId) {
 		Set<Long> closure = getConceptAndAllSuperTypes(conceptId);
-		if (relationshipNormalFormGenerator.getAllTransitiveProperties().contains(typeId)) {
-			closure.addAll(relationshipNormalFormGenerator.getTransitiveNodeGraphs().get(typeId).getAncestors(conceptId));
-			for (Long transitiveProperty : relationshipNormalFormGenerator.getSnomedTaxonomy().getSubTypeIds(typeId)) {
-				NodeGraph nodeGraph = relationshipNormalFormGenerator.getTransitiveNodeGraphs().get(transitiveProperty);
-				if (nodeGraph != null) {
-					closure.addAll(nodeGraph.getAncestors(conceptId));
-				} else {
-					LOGGER.warn("No transitive node graph for attribute {} despite being a subtype of {}", transitiveProperty, typeId);
-				}
-			}
+		Collection<NodeGraph> graphs = relationshipNormalFormGenerator.getTransitiveNodeGraphs().values();
+		for (NodeGraph graph : graphs) {
+			Set<Long> ancestors = graph.getAncestors(conceptId);
+			closure.addAll(ancestors);
 		}
 		return closure;
 	}

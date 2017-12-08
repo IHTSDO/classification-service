@@ -64,7 +64,8 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 
 	private final Map<Long, Collection<Relationship>> generatedNonIsACache = new Long2ObjectOpenHashMap<>();
 
-	private final Set<Long> conceptsWithTransitiveAttributes = new LongOpenHashSet();
+	// Concepts in this set should be processed a second time to try to normalise their relationships further
+	private final Set<Long> conceptsWithTransitiveAttributeValue = new LongOpenHashSet();
 
 	/**
 	 * Creates a new distribution normal form generator instance.
@@ -96,7 +97,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		// Add to transitive graphs
 		Streams.stream(inferredNonIsAFragments).filter(r -> allTransitiveProperties.contains(r.getTypeId())).forEach(r -> {
 			transitiveNodeGraphs.get(r.getTypeId()).addParent(conceptId, r.getDestinationId());
-			conceptsWithTransitiveAttributes.add(conceptId);
+			conceptsWithTransitiveAttributeValue.add(conceptId);
 		});
 	}
 
@@ -110,7 +111,7 @@ public final class RelationshipNormalFormGenerator extends NormalFormGenerator<R
 		Iterable<Relationship> inferredNonIsAFragments;
 		inferredNonIsAFragments = generatedNonIsACache.get(conceptId);
 		for (Relationship inferredNonIsAFragment : inferredNonIsAFragments) {
-			if (conceptsWithTransitiveAttributes.contains(inferredNonIsAFragment.getDestinationId())) {
+			if (conceptsWithTransitiveAttributeValue.contains(inferredNonIsAFragment.getDestinationId())) {
 				inferredNonIsAFragments = getInferredNonIsAFragmentsInNormalForm(conceptId);
 				break;
 			}
