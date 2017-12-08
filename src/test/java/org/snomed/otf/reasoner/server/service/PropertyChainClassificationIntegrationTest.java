@@ -48,8 +48,9 @@ public class PropertyChainClassificationIntegrationTest {
 		// 'Is modification of' is a transitive attribute
 		// This makes the stated relationships "Morphine sulphate product - Has active ingredient - Morphine sulphate substance" more specific.
 		// This makes the relationship "Morphine sulphate product - Has active ingredient - Morphine substance" redundant.
+		// This relationship is redundant even though it's in a different group to the more specific active ingredient.
 		assertFalse("Inferred relationship. Morphine sulphate product - Has active ingredient - Morphine substance",
-				lines.contains("1\t\t100206001\t100202001\t0\t127489000\t900000000000011006\t900000000000451002"));
+				lines.contains("1\t\t100206001\t100202001\t2\t127489000\t900000000000011006\t900000000000451002"));
 
 		assertTrue("Inferred relationship. Morphine sulphate product - Is a - Morphine product",
 				lines.contains("1\t\t100206001\t100205001\t0\t116680003\t900000000000011006\t900000000000451002"));
