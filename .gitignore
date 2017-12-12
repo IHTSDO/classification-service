@@ -1,7 +1,6 @@
 .*
 /target
-/release
-/testing
 /debug
+/store
 application-*.properties
 *.iml

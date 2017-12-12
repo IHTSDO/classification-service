@@ -33,10 +33,8 @@ public class FileStoreService {
 		return new FileInputStream(getFile(classification, INPUT_DELTA_ZIP));
 	}
 
-	public void saveResults(Classification classification, File resultsArchive) throws IOException {
-		try (FileInputStream fileInputStream = new FileInputStream(resultsArchive)) {
-			StreamUtils.copy(fileInputStream, new FileOutputStream(getFile(classification, RESULTS_ZIP)));
-		}
+	public File getResultsFile(Classification classification) {
+		return getFile(classification, RESULTS_ZIP);
 	}
 
 	public InputStream loadResults(Classification classification) throws FileNotFoundException {
