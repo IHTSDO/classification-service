@@ -26,7 +26,9 @@ public class FileStoreService {
 	}
 
 	public void saveDeltaInput(Classification classification, InputStream snomedRf2SnapshotArchive) throws IOException {
-		StreamUtils.copy(snomedRf2SnapshotArchive, new FileOutputStream(getFile(classification, INPUT_DELTA_ZIP)));
+		try (FileOutputStream out = new FileOutputStream(getFile(classification, INPUT_DELTA_ZIP))) {
+			StreamUtils.copy(snomedRf2SnapshotArchive, out);
+		}
 	}
 
 	public InputStream loadDeltaInput(Classification classification) throws FileNotFoundException {
