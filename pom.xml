@@ -21,11 +21,11 @@
 	</properties>
 
 	<dependencies>
-		<!-- Snomed power -->
+		<!-- SNOMED OWL Toolkit (does all the heavy lifting) -->
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-owl-toolkit</artifactId>
-			<version>1.0.2</version>
+			<version>1.0.3-SNAPSHOT</version>
 		</dependency>
 
 		<!-- Spring boot -->
