@@ -23,7 +23,7 @@ For each SNOMED CT Edition you would like to classify against put an RF2 archive
 When creating a classification using **POST /classifications** the _previousRelease_ parameter should be the filename of one of these archives.
 
 ### Configuration options
-The default configuration of this Spring Boot application can be found in [application.properties](blob/master/src/main/resources/application.properties). The defaults can be overridden using command line arguments, for example set a different HTTP port:
+The default configuration of this Spring Boot application can be found in [application.properties](src/main/resources/application.properties). The defaults can be overridden using command line arguments, for example set a different HTTP port:
 ```bash
 java -Xmx3g -jar target/classification-service*.jar --server.port=8081
 ```
