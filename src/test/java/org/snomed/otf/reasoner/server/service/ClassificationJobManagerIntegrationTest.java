@@ -4,13 +4,15 @@ import com.google.common.io.Files;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockitoAnnotations;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.owltoolkit.testutil.ZipUtil;
 import org.snomed.otf.reasoner.server.configuration.Configuration;
+import org.snomed.otf.reasoner.server.configuration.TestConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
@@ -25,8 +27,8 @@ import static junit.framework.TestCase.fail;
 import static org.snomed.otf.reasoner.server.pojo.ClassificationStatus.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
-@Import(Configuration.class)
+@SpringBootTest(classes = {TestConfiguration.class})
+@ActiveProfiles("test")
 public class ClassificationJobManagerIntegrationTest {
 
 	@Autowired

@@ -41,6 +41,9 @@ public class ResourceManager {
 	public OutputStream writeResourceStream(String resourcePath) throws IOException {
 		writeCheck();
 		String fullPath = getFullPath(resourcePath);
+		if (!resourceConfiguration.isUseCloud()) {
+			new java.io.File(fullPath).getParentFile().mkdirs();
+		}
 		Resource resource = resourceLoader.getResource(fullPath);
 		WritableResource writableResource = (WritableResource) resource;
 		return writableResource.getOutputStream();
