@@ -1,4 +1,4 @@
-package org.snomed.otf.reasoner.server;
+package org.snomed.otf.reasoner.server.configuration;
 
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

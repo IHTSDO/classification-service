@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.owltoolkit.testutil.ZipUtil;
-import org.snomed.otf.reasoner.server.Configuration;
+import org.snomed.otf.reasoner.server.configuration.Configuration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

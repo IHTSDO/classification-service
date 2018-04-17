@@ -2,13 +2,16 @@ package org.snomed.otf.reasoner.server.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.reasoner.server.pojo.Classification;
-import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
 import org.snomed.otf.owltoolkit.service.ReasonerServiceException;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
-import org.snomed.otf.reasoner.server.service.store.FileStoreService;
+import org.snomed.otf.reasoner.server.configuration.ClassificationJobResourceConfiguration;
+import org.snomed.otf.reasoner.server.configuration.SnomedReleaseResourceConfiguration;
+import org.snomed.otf.reasoner.server.pojo.Classification;
+import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
+import org.snomed.otf.reasoner.server.service.common.ResourceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -23,7 +26,9 @@ public class ClassificationJobManager {
 
 	private final SnomedReasonerService snomedReasonerService;
 
-	private final FileStoreService fileStoreService;
+	private final ResourceManager snomedReleaseResourceManager;
+
+	private final ResourceManager classificationJobResourceManager;
 
 	private final LinkedBlockingQueue<Classification> classificationQueue;
 
@@ -34,10 +39,15 @@ public class ClassificationJobManager {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ClassificationJobManager(@Autowired FileStoreService fileStoreService,
-									@Autowired SnomedReasonerService snomedReasonerService) {
+	public ClassificationJobManager(
+			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
+			@Autowired ClassificationJobResourceConfiguration classificationJobResourceConfiguration,
+			@Autowired ResourceLoader cloudResourceLoader,
+			@Autowired SnomedReasonerService snomedReasonerService) {
+
+		snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
+		classificationJobResourceManager = new ResourceManager(classificationJobResourceConfiguration, cloudResourceLoader);
 		this.snomedReasonerService = snomedReasonerService;
-		this.fileStoreService = fileStoreService;
 		classificationQueue = new LinkedBlockingQueue<>();
 		classificationMap = new HashMap<>();
 	}
@@ -59,13 +69,13 @@ public class ClassificationJobManager {
 		}, "job-polling-thread").start();
 	}
 
-	public Classification queueClassification(String previousRelease, InputStream snomedRf2SnapshotArchive, String reasonerId, String branch) throws IOException {
+	public Classification queueClassification(String previousRelease, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
 		Classification classification = new Classification(previousRelease, branch, reasonerId);
 
 		// Persist input archive
 		try {
-			fileStoreService.saveDeltaInput(classification, snomedRf2SnapshotArchive);
+			classificationJobResourceManager.writeResource(ResourcePathHelper.getInputDeltaPath(classification), snomedRf2DeltaInputArchive);
 		} catch (IOException e) {
 			throw new IOException("Failed to persist input archive.", e);
 		}
@@ -77,14 +87,15 @@ public class ClassificationJobManager {
 		return classification;
 	}
 
+
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
-		try (InputStream previousReleaseRf2SnapshotArchive = fileStoreService.loadPreviousRelease(classification.getPreviousRelease());
-			 InputStream currentReleaseRf2DeltaArchive = fileStoreService.loadDeltaInput(classification)) {
 
-			File resultsFile = fileStoreService.getResultsFile(classification);
+		try (InputStream previousReleaseRf2SnapshotArchive = snomedReleaseResourceManager.readResourceStream(classification.getPreviousRelease());
+			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
 
-			try (OutputStream resultsOutputStream = new FileOutputStream(resultsFile)) {
+			String resultsPath = ResourcePathHelper.getResultsPath(classification);
+			try (OutputStream resultsOutputStream = classificationJobResourceManager.writeResourceStream(resultsPath)) {
 				snomedReasonerService.classify(
 						classification.getClassificationId(),
 						previousReleaseRf2SnapshotArchive,
@@ -94,7 +105,7 @@ public class ClassificationJobManager {
 						outputOntologyFileForDebug);
 			}
 			classification.setStatus(ClassificationStatus.COMPLETED);
-			logger.info("Classification complete. Results written to {}", resultsFile.getAbsolutePath());
+			logger.info("Classification complete. Results written to {}", resultsPath);
 
 		} catch (ReasonerServiceException e) {
 			classificationFailed(classification, e, e.getMessage());
@@ -114,7 +125,7 @@ public class ClassificationJobManager {
 		return classificationMap.get(classificationId);
 	}
 
-	public InputStream getClassificationResults(Classification classification) throws FileNotFoundException {
-		return fileStoreService.loadResults(classification);
+	public InputStream getClassificationResults(Classification classification) throws IOException {
+		return classificationJobResourceManager.readResourceStream(ResourcePathHelper.getResultsPath(classification));
 	}
 }
