@@ -1,5 +1,6 @@
 package org.snomed.otf.reasoner.server.service.common;
 
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -26,15 +27,23 @@ public class ResourceManager {
 
 
 	public InputStream readResourceStream(String resourcePath) throws IOException {
-		String fullPath = getFullPath(resourcePath);
-		Resource resource = resourceLoader.getResource(fullPath);
-		return resource.getInputStream();
+		try {
+			String fullPath = getFullPath(resourcePath);
+			Resource resource = resourceLoader.getResource(fullPath);
+			return resource.getInputStream();
+		} catch (AmazonS3Exception e) {
+			throw new IOException("Failed to load resource.", e);
+		}
 	}
 
 	public void writeResource(String resourcePath, InputStream resourceInputStream) throws IOException {
-		try (OutputStream outputStream = writeResourceStream(resourcePath);
-			 InputStream inputStream = resourceInputStream) {
-			StreamUtils.copy(inputStream, outputStream);
+		try {
+			try (OutputStream outputStream = writeResourceStream(resourcePath);
+				 InputStream inputStream = resourceInputStream) {
+				StreamUtils.copy(inputStream, outputStream);
+			}
+		} catch (AmazonS3Exception e) {
+			throw new IOException("Failed to write resource.", e);
 		}
 	}
 
@@ -44,9 +53,13 @@ public class ResourceManager {
 		if (!resourceConfiguration.isUseCloud()) {
 			new java.io.File(fullPath).getParentFile().mkdirs();
 		}
-		Resource resource = resourceLoader.getResource(fullPath);
-		WritableResource writableResource = (WritableResource) resource;
-		return writableResource.getOutputStream();
+		try {
+			Resource resource = resourceLoader.getResource(fullPath);
+			WritableResource writableResource = (WritableResource) resource;
+			return writableResource.getOutputStream();
+		} catch (AmazonS3Exception e) {
+			throw new IOException("Failed to write resource.", e);
+		}
 	}
 
 	private void writeCheck() {

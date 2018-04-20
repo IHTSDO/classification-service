@@ -110,7 +110,7 @@ public class ClassificationJobManager {
 		} catch (ReasonerServiceException e) {
 			classificationFailed(classification, e, e.getMessage());
 		} catch (IOException e) {
-			classificationFailed(classification, e, "Failed to read or files RF2 files.");
+			classificationFailed(classification, e, "Failed to read or write RF2 files.");
 		}
 	}
 
