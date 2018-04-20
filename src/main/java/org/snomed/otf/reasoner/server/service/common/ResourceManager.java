@@ -1,6 +1,8 @@
 package org.snomed.otf.reasoner.server.service.common;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -15,6 +17,7 @@ public class ResourceManager {
 
 	private final ResourceConfiguration resourceConfiguration;
 	private final ResourceLoader resourceLoader;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ResourceManager(ResourceConfiguration resourceConfiguration, ResourceLoader cloudResourceLoader) {
 		this.resourceConfiguration = resourceConfiguration;
@@ -25,14 +28,13 @@ public class ResourceManager {
 		}
 	}
 
-
 	public InputStream readResourceStream(String resourcePath) throws IOException {
 		try {
 			String fullPath = getFullPath(resourcePath);
 			Resource resource = resourceLoader.getResource(fullPath);
 			return resource.getInputStream();
 		} catch (AmazonS3Exception e) {
-			throw new IOException("Failed to load resource.", e);
+			throw new IOException("Failed to load resource '" + resourcePath + "'.", e);
 		}
 	}
 
@@ -43,7 +45,7 @@ public class ResourceManager {
 				StreamUtils.copy(inputStream, outputStream);
 			}
 		} catch (AmazonS3Exception e) {
-			throw new IOException("Failed to write resource.", e);
+			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
 		}
 	}
 
@@ -58,7 +60,7 @@ public class ResourceManager {
 			WritableResource writableResource = (WritableResource) resource;
 			return writableResource.getOutputStream();
 		} catch (AmazonS3Exception e) {
-			throw new IOException("Failed to write resource.", e);
+			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
 		}
 	}
 
