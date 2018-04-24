@@ -29,6 +29,13 @@
 			<version>1.0.3</version>
 		</dependency>
 
+		<!-- Snomed International common -->
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>1.6.0-SNAPSHOT</version>
+		</dependency>
+
 		<!-- Spring Boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -8,7 +8,7 @@ import org.snomed.otf.reasoner.server.configuration.ClassificationJobResourceCon
 import org.snomed.otf.reasoner.server.configuration.SnomedReleaseResourceConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
-import org.snomed.otf.reasoner.server.service.common.ResourceManager;
+import org.ihtsdo.otf.dao.resources.ResourceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
