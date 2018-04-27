@@ -1,4 +1,4 @@
-Snomed Classification Service
+Snomed Classification Service [![Build Status](https://travis-ci.org/IHTSDO/classification-service.svg?branch=master)](https://travis-ci.org/IHTSDO/classification-service)
 ====================================
 
 ## Overview
