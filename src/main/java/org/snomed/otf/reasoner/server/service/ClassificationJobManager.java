@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.service.ReasonerServiceException;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
+import org.snomed.otf.owltoolkit.util.InputStreamSet;
 import org.snomed.otf.reasoner.server.configuration.ClassificationJobResourceConfiguration;
 import org.snomed.otf.reasoner.server.configuration.SnomedReleaseResourceConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -91,14 +92,14 @@ public class ClassificationJobManager {
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
 
-		try (InputStream previousReleaseRf2SnapshotArchive = snomedReleaseResourceManager.readResourceStream(classification.getPreviousRelease());
+		try (InputStreamSet previousReleaseRf2SnapshotArchives = new InputStreamSet(snomedReleaseResourceManager.readResourceStream(classification.getPreviousRelease()));
 			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
 
 			String resultsPath = ResourcePathHelper.getResultsPath(classification);
 			try (OutputStream resultsOutputStream = classificationJobResourceManager.writeResourceStream(resultsPath)) {
 				snomedReasonerService.classify(
 						classification.getClassificationId(),
-						previousReleaseRf2SnapshotArchive,
+						previousReleaseRf2SnapshotArchives,
 						currentReleaseRf2DeltaArchive,
 						resultsOutputStream,
 						classification.getReasonerId(),
