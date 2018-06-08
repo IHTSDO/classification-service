@@ -1,5 +1,7 @@
 package org.snomed.otf.reasoner.server.rest;
 
+import com.google.common.base.Strings;
+import io.swagger.annotations.ApiOperation;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
@@ -13,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.*;
 
 import static org.snomed.otf.owltoolkit.service.SnomedReasonerService.ELK_REASONER_FACTORY;
 
@@ -24,15 +27,35 @@ public class ClassificationController {
 	private ClassificationJobManager classificationJobManager;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
-	public ResponseEntity createClassification(@RequestParam String previousRelease,
-											   @RequestParam MultipartFile rf2Delta,
-											   @RequestParam(required = false) String branch,
-											   @RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
-											   UriComponentsBuilder uriComponentsBuilder) {
+	public ResponseEntity createClassification(@RequestParam(required = false) String previousRelease,
+			@RequestParam(required = false) Set<String> previousReleases,
+			@RequestParam MultipartFile rf2Delta,
+			@RequestParam(required = false) @Deprecated String branch,
+			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
+			UriComponentsBuilder uriComponentsBuilder) {
+
+		if (Strings.isNullOrEmpty(previousRelease) && (previousReleases == null || previousReleases.isEmpty())) {
+			throw new IllegalArgumentException("Either the 'previousRelease' or 'previousReleases' parameter must be given.");
+		}
+
+		if (previousReleases == null) {
+			previousReleases = new HashSet<>();
+		}
+
+		// Comma split 'previousRelease' and add to 'previousReleases'
+		if (!Strings.isNullOrEmpty(previousRelease)) {
+			String[] split = previousRelease.split("\\,");
+			for (String s : split) {
+				s = s.trim();
+				if (!s.isEmpty()) {
+					previousReleases.add(s);
+				}
+			}
+		}
 
 		Classification classification;
 		try {
-			classification = classificationJobManager.queueClassification(previousRelease, rf2Delta.getInputStream(), reasonerId, branch);
+			classification = classificationJobManager.queueClassification(previousReleases, rf2Delta.getInputStream(), reasonerId, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}

@@ -17,8 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -70,9 +69,9 @@ public class ClassificationJobManager {
 		}, "job-polling-thread").start();
 	}
 
-	public Classification queueClassification(String previousRelease, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
+	public Classification queueClassification(Set<String> previousReleases, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
-		Classification classification = new Classification(previousRelease, branch, reasonerId);
+		Classification classification = new Classification(previousReleases, branch, reasonerId);
 
 		// Persist input archive
 		try {
@@ -88,11 +87,10 @@ public class ClassificationJobManager {
 		return classification;
 	}
 
-
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
 
-		try (InputStreamSet previousReleaseRf2SnapshotArchives = new InputStreamSet(snomedReleaseResourceManager.readResourceStream(classification.getPreviousRelease()));
+		try (InputStreamSet previousReleaseRf2SnapshotArchives = getInputStreams(classification.getPreviousReleases());
 			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
 
 			String resultsPath = ResourcePathHelper.getResultsPath(classification);
@@ -113,6 +111,30 @@ public class ClassificationJobManager {
 		} catch (IOException e) {
 			classificationFailed(classification, e, "Failed to read or write RF2 files.");
 		}
+	}
+
+	/**
+	 * Load all the previous release archives from the release resource manager as streams.
+	 * @param previousReleases relative path of the archives to be loaded.
+	 * @return InputStreamSet
+	 */
+	private InputStreamSet getInputStreams(Set<String> previousReleases) {
+		Set<InputStream> previousReleaseStreams = new HashSet<>();
+		try {
+			for (String previousRelease : previousReleases) {
+				previousReleaseStreams.add(snomedReleaseResourceManager.readResourceStream(previousRelease));
+			}
+		} catch (IOException e) {
+			previousReleaseStreams.forEach(inputStream -> {
+				try {
+					inputStream.close();
+				} catch (IOException closeException) {
+					logger.error("Failed to close stream.", closeException);
+				}
+			});
+		}
+
+		return new InputStreamSet(previousReleaseStreams.toArray(new InputStream[]{}));
 	}
 
 	private void classificationFailed(Classification classification, Exception e, String message) {

@@ -1,6 +1,8 @@
 package org.snomed.otf.reasoner.server.pojo;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public final class Classification {
@@ -8,13 +10,13 @@ public final class Classification {
 	private final String branch;
 	private final String reasonerId;
 	private final Date created;
-	private final String previousRelease;
+	private final Set<String> previousReleases;
 	private ClassificationStatus status;
 	private String errorMessage;
 	private String developerMessage;
 
-	public Classification(String previousRelease, String branch, String reasonerId) {
-		this.previousRelease = previousRelease;
+	public Classification(Set<String> previousReleases, String branch, String reasonerId) {
+		this.previousReleases = previousReleases;
 		this.classificationId = UUID.randomUUID().toString();
 		this.branch = branch;
 		this.reasonerId = reasonerId;
@@ -42,8 +44,8 @@ public final class Classification {
 		return reasonerId;
 	}
 
-	public String getPreviousRelease() {
-		return previousRelease;
+	public Set<String> getPreviousReleases() {
+		return previousReleases;
 	}
 
 	public void setStatus(ClassificationStatus status) {

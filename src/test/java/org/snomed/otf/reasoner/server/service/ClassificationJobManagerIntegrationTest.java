@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -57,7 +58,7 @@ public class ClassificationJobManagerIntegrationTest {
 	@Test
 	public void queueClassification() throws Exception {
 		Classification classification = classificationJobManager.queueClassification(
-				baseReleasePath,
+				Collections.singleton(baseReleasePath),
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
 				"MAIN"
