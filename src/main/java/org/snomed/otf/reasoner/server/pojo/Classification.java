@@ -1,5 +1,8 @@
 package org.snomed.otf.reasoner.server.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -44,8 +47,14 @@ public final class Classification {
 		return reasonerId;
 	}
 
+	@JsonIgnore
 	public Set<String> getPreviousReleases() {
 		return previousReleases;
+	}
+
+	@JsonProperty("previousRelease")
+	public String getPreviousReleaseSetString() {
+		return previousReleases != null ? previousReleases.toString() : null;
 	}
 
 	public void setStatus(ClassificationStatus status) {
