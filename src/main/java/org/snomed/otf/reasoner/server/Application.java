@@ -34,6 +34,7 @@ public class Application extends Configuration {
 				.select()
 				.apis(RequestHandlerSelectors.any())
 				.paths(not(regex("/error")))
+				.paths(not(regex("/")))
 				.build();
 	}
 
