@@ -118,7 +118,7 @@ public class ClassificationJobManager {
 	 * @param previousReleases relative path of the archives to be loaded.
 	 * @return InputStreamSet
 	 */
-	private InputStreamSet getInputStreams(Set<String> previousReleases) {
+	private InputStreamSet getInputStreams(Set<String> previousReleases) throws IOException {
 		Set<InputStream> previousReleaseStreams = new HashSet<>();
 		try {
 			for (String previousRelease : previousReleases) {
@@ -132,6 +132,7 @@ public class ClassificationJobManager {
 					logger.error("Failed to close stream.", closeException);
 				}
 			});
+			throw e;
 		}
 
 		return new InputStreamSet(previousReleaseStreams.toArray(new InputStream[]{}));
