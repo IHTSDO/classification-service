@@ -1,6 +1,7 @@
 package org.snomed.otf.reasoner.server.rest;
 
 import com.google.common.base.Strings;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -27,6 +28,8 @@ public class ClassificationController {
 	private ClassificationJobManager classificationJobManager;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
+	@ApiOperation(value = "Create and run a classification job.", notes = "The previousRelease parameter will be split by the comma separator " +
+			"and combined with the previousReleases parameter for backward compatibility. The branch parameter is deprecated and will be removed in a future release.")
 	public ResponseEntity createClassification(@RequestParam(required = false) String previousRelease,
 			@RequestParam(required = false) Set<String> previousReleases,
 			@RequestParam MultipartFile rf2Delta,
@@ -65,6 +68,7 @@ public class ClassificationController {
 	}
 
 	@RequestMapping(path = "/{classificationId}", method = RequestMethod.GET)
+	@ApiOperation("Check the status of an existing classification.")
 	public Classification getClassification(@PathVariable String classificationId) throws FileNotFoundException {
 		Classification classification = classificationJobManager.getClassification(classificationId);
 		if (classification == null) {
@@ -74,6 +78,7 @@ public class ClassificationController {
 	}
 
 	@RequestMapping(path = "/{classificationId}/results/rf2", method = RequestMethod.GET, produces="application/zip")
+	@ApiOperation("Download the results of a completed classification.")
 	public void getClassificationResultsRf2(@PathVariable String classificationId, HttpServletResponse response) throws IOException {
 		Classification classification = classificationJobManager.getClassification(classificationId);
 		if (classification == null) {
