@@ -89,6 +89,7 @@ public class ClassificationJobManager {
 
 	private void classify(Classification classification) {
 		classification.setStatus(ClassificationStatus.RUNNING);
+		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
 		try (InputStreamSet previousReleaseRf2SnapshotArchives = getInputStreams(classification.getPreviousReleases());
 			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
@@ -104,7 +105,7 @@ public class ClassificationJobManager {
 						outputOntologyFileForDebug);
 			}
 			classification.setStatus(ClassificationStatus.COMPLETED);
-			logger.info("Classification complete. Results written to {}", resultsPath);
+			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException e) {
 			classificationFailed(classification, e, e.getMessage());
@@ -139,7 +140,7 @@ public class ClassificationJobManager {
 	}
 
 	private void classificationFailed(Classification classification, Exception e, String message) {
-		logger.error(message, e);
+		logger.error("Classification failed {}, branch {}. " + message, classification.getClassificationId(), classification.getBranch(), e);
 		classification.setStatus(ClassificationStatus.FAILED);
 		classification.setErrorMessage(message);
 		classification.setDeveloperMessage(e.getMessage());
