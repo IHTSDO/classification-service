@@ -117,6 +117,15 @@ public class ClassificationJobManager {
 			classification.setStatus(statusAndMessage.getStatus());
 			classification.setStatusMessage(statusAndMessage.getStatusMessage());
 			saveClassification(classification);
+
+			// Send notification via JMS
+			if (jmsReplyTo != null) {
+				try {
+					messagingHelper.send(jmsReplyTo, statusAndMessage);
+				} catch (JsonProcessingException | JMSException e) {
+					logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
+				}
+			}
 		});
 	}
 

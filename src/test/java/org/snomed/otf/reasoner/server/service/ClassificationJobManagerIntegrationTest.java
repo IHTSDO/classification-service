@@ -7,9 +7,11 @@ import org.junit.runner.RunWith;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.reasoner.server.configuration.TestConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
+import org.snomed.otf.reasoner.server.pojo.ClassificationStatusAndMessage;
 import org.snomed.otf.snomedboot.testutil.ZipUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -77,6 +79,40 @@ public class ClassificationJobManagerIntegrationTest {
 		}
 
 		assertEquals("Classification status is COMPLETED", COMPLETED, classification.getStatus());
+	}
+
+	private ClassificationStatusAndMessage classificationStatus;
+
+	@JmsListener(destination = "test.job.status.queue")
+	public void readJobStatusUpdate(ClassificationStatusAndMessage classificationStatus) {
+		this.classificationStatus = classificationStatus;
+	}
+
+	@Test
+	public void queueClassificationReadStatusViaJMS() throws Exception {
+
+		String responseMessageQueue = "test.job.status.queue";
+
+		classificationJobManager.queueClassification(
+				Collections.singleton(baseReleasePath),
+				new FileInputStream(newContentDeltaArchive),
+				SnomedReasonerService.ELK_REASONER_FACTORY,
+				responseMessageQueue,
+				"MAIN"
+		);
+
+		GregorianCalendar timeout = new GregorianCalendar();
+		timeout.add(Calendar.MINUTE, 2);
+
+		while (classificationStatus == null || classificationStatus.getStatus() == SCHEDULED || classificationStatus.getStatus() == RUNNING) {
+			if (new Date().after(timeout.getTime())) {
+				fail("Classification must complete before test timeout.");
+			}
+			Thread.sleep(1_000);
+			// No need to read anything here, status comes in via JMS in readJobStatusUpdate method
+		}
+
+		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
 	}
 
 }
