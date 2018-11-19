@@ -1,5 +1,6 @@
 package org.snomed.otf.reasoner.server.service;
 
+import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.ihtsdo.otf.dao.resources.ResourceManager;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,6 +80,7 @@ public class ClassificationJobManager {
 		// Persist input archive
 		try {
 			classificationJobResourceManager.writeResource(ResourcePathHelper.getInputDeltaPath(classification), snomedRf2DeltaInputArchive);
+			saveClassification(classification);
 		} catch (IOException e) {
 			throw new IOException("Failed to persist input archive.", e);
 		}
@@ -93,16 +96,32 @@ public class ClassificationJobManager {
 		return classification;
 	}
 
+	private void saveClassification(Classification classification) {
+		try {
+			String classificationString = objectMapper.writeValueAsString(classification);
+			classificationJobResourceManager.writeResource(
+					ResourcePathHelper.getClassificationPathFromToday(classification.getClassificationId()),
+					new StringInputStream(classificationString));
+		} catch (IOException e) {
+			logger.error("Failed to save classification {}", classification.getClassificationId(), e);
+		}
+	}
+
 	@JmsListener(destination = "${classification.jms.job.queue}")
 	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
 
 		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
 		classify(classification, statusAndMessage -> {
+			// Update classification in resource store
+			classification.setStatus(statusAndMessage.getStatus());
+			classification.setStatusMessage(statusAndMessage.getStatusMessage());
+			saveClassification(classification);
 		});
 	}
 
 	private void classify(Classification classification, Consumer<ClassificationStatusAndMessage> statusConsumer) {
+		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING));
 		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
 		Set<String> previousPackages = new HashSet<>();
@@ -126,11 +145,12 @@ public class ClassificationJobManager {
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
 			}
-			classification.setStatus(ClassificationStatus.COMPLETED);
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED));
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException | IOException e) {
 			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
 		}
 	}
 
@@ -157,6 +177,26 @@ public class ClassificationJobManager {
 		}
 
 		return new InputStreamSet(previousReleaseStreams.toArray(new InputStream[]{}));
+	}
+
+	public Classification getClassification(String classificationId) throws FileNotFoundException {
+		// Classifications are stored by date. We will guess the date and return nothing if the classification was more than 5 days ago.
+		for (int daysInPast = 0; daysInPast <= 5; daysInPast++) {
+			String classificationPath = ResourcePathHelper.getClassificationPathFromPast(classificationId, daysInPast);
+			try {
+				InputStream inputStream = classificationJobResourceManager.readResourceStreamOrNullIfNotExists(classificationPath);
+				if (inputStream != null) {
+					try {
+						return objectMapper.readValue(inputStream, Classification.class);
+					} finally {
+						inputStream.close();
+					}
+				}
+			} catch (IOException e) {
+				logger.error("Failed to load classification from store.", e);
+			}
+		}
+		throw new FileNotFoundException("Classification with ID " + classificationId + " not found.");
 	}
 
 	public InputStream getClassificationResults(Classification classification) throws IOException {
