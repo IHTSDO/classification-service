@@ -62,7 +62,7 @@ public class ClassificationJobManagerIntegrationTest {
 				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
-				"MAIN"
+				null, "MAIN"
 		);
 
 		GregorianCalendar timeout = new GregorianCalendar();

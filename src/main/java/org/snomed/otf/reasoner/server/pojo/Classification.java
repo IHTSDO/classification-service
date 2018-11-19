@@ -1,19 +1,16 @@
 package org.snomed.otf.reasoner.server.pojo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Date;
-import java.util.Set;
 import java.util.UUID;
 
 public final class Classification {
-	private final String classificationId;
-	private final String branch;
-	private final String reasonerId;
-	private final Date created;
-	private final String previousPackage;
-	private final String dependencyPackage;
+
+	private String classificationId;
+	private String branch;
+	private String reasonerId;
+	private Date created;
+	private String previousPackage;
+	private String dependencyPackage;
 	private ClassificationStatus status;
 	private String statusMessage;
 

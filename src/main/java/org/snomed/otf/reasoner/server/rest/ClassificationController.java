@@ -1,7 +1,6 @@
 package org.snomed.otf.reasoner.server.rest;
 
 import com.google.common.base.Strings;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -16,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
 
 import static org.snomed.otf.owltoolkit.service.SnomedReasonerService.ELK_REASONER_FACTORY;
 
@@ -28,11 +26,15 @@ public class ClassificationController {
 	private ClassificationJobManager classificationJobManager;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
-	@ApiOperation(value = "Create and run a classification job.", notes = "The dependencyPackage is only required for classifying extensions."
-			+ " The value should be the international release package that the extension is based on.")
+	@ApiOperation(value = "Create and run a classification job.",
+			notes = "The dependencyPackage is only required for classifying extensions."
+			+ " The value should be the international release package that the extension is based on." +
+					"Include a responseMessageQueue if you want to receive job status updates via JMS. " +
+					"The branch parameter is deprecated and will be removed in a future release.")
 	public ResponseEntity createClassification(@RequestParam(required = false) String previousPackage,
 			@RequestParam(required = false) String dependencyPackage,
 			@RequestParam MultipartFile rf2Delta,
+			@RequestParam(required = false) String responseMessageQueue,
 			@RequestParam(required = false) @Deprecated String branch,
 			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
 			UriComponentsBuilder uriComponentsBuilder) {
@@ -42,7 +44,7 @@ public class ClassificationController {
 		}
 		Classification classification;
 		try {
-			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, branch);
+			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, responseMessageQueue, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}
