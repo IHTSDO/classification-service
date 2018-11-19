@@ -15,8 +15,7 @@ public final class Classification {
 	private final String previousPackage;
 	private final String dependencyPackage;
 	private ClassificationStatus status;
-	private String errorMessage;
-	private String developerMessage;
+	private String statusMessage;
 
 	public Classification(String previousPackage,  String dependencyPackage, String branch, String reasonerId) {
 		this.previousPackage = previousPackage;
@@ -60,20 +59,12 @@ public final class Classification {
 		this.status = status;
 	}
 
-	public void setErrorMessage(String errorMessage) {
-		this.errorMessage = errorMessage;
+	public void setStatusMessage(String statusMessage) {
+		this.statusMessage = statusMessage;
 	}
 
-	public String getErrorMessage() {
-		return errorMessage;
-	}
-
-	public void setDeveloperMessage(String developerMessage) {
-		this.developerMessage = developerMessage;
-	}
-
-	public String getDeveloperMessage() {
-		return developerMessage;
+	public String getStatusMessage() {
+		return statusMessage;
 	}
 
 }
