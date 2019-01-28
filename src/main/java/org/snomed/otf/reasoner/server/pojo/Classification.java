@@ -12,13 +12,15 @@ public final class Classification {
 	private final String branch;
 	private final String reasonerId;
 	private final Date created;
-	private final Set<String> previousPackages;
+	private final String previousPackage;
+	private final String dependencyPackage;
 	private ClassificationStatus status;
 	private String errorMessage;
 	private String developerMessage;
 
-	public Classification(Set<String> previousPackages, String branch, String reasonerId) {
-		this.previousPackages = previousPackages;
+	public Classification(String previousPackage,  String dependencyPackage, String branch, String reasonerId) {
+		this.previousPackage = previousPackage;
+		this.dependencyPackage = dependencyPackage;
 		this.classificationId = UUID.randomUUID().toString();
 		this.branch = branch;
 		this.reasonerId = reasonerId;
@@ -46,14 +48,12 @@ public final class Classification {
 		return reasonerId;
 	}
 
-	@JsonIgnore
-	public Set<String> getPreviousPackages() {
-		return previousPackages;
+	public String getPreviousPackage() {
+		return previousPackage;
 	}
 
-	@JsonProperty("previousPackage")
-	public String getPreviousPacakgeSetString() {
-		return previousPackages != null ? previousPackages.toString() : null;
+	public String getDependencyPackage() {
+		return dependencyPackage;
 	}
 
 	public void setStatus(ClassificationStatus status) {

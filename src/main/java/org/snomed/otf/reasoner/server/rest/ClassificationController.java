@@ -40,14 +40,10 @@ public class ClassificationController {
 		if (Strings.isNullOrEmpty(previousPackage)) {
 			throw new IllegalArgumentException("The previousPackage parameter must be given.");
 		}
-		Set<String> previousPackages = new HashSet<>();
-		previousPackages.add(previousPackage);
-		if (!Strings.isNullOrEmpty(dependencyPackage)) {
-			previousPackages.add(dependencyPackage);
 		}
 		Classification classification;
 		try {
-			classification = classificationJobManager.queueClassification(previousPackages, rf2Delta.getInputStream(), reasonerId, branch);
+			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}
