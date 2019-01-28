@@ -30,16 +30,15 @@ public class ClassificationController {
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
 	@ApiOperation(value = "Create and run a classification job.", notes = "The dependencyPackage is only required for classifying extensions."
 			+ " The value should be the international release package that the extension is based on.")
-	public ResponseEntity createClassification(@RequestParam(required = true) String previousPackage,
+	public ResponseEntity createClassification(@RequestParam(required = false) String previousPackage,
 			@RequestParam(required = false) String dependencyPackage,
 			@RequestParam MultipartFile rf2Delta,
 			@RequestParam(required = false) @Deprecated String branch,
 			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
 			UriComponentsBuilder uriComponentsBuilder) {
 
-		if (Strings.isNullOrEmpty(previousPackage)) {
-			throw new IllegalArgumentException("The previousPackage parameter must be given.");
-		}
+		if (Strings.isNullOrEmpty(previousPackage) && Strings.isNullOrEmpty(dependencyPackage)) {
+			throw new IllegalArgumentException("Either the previousPackage or dependencyPackage parameter must be given.");
 		}
 		Classification classification;
 		try {
