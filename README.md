@@ -2,7 +2,7 @@ Snomed Classification Service [![Build Status](https://travis-ci.org/IHTSDO/clas
 ====================================
 
 ## Overview
-An open source standalone REST API for the classification of SNOMED CT ontologies, uses the Snomed OWL Toolkit.
+An open source standalone REST API for the classification of SNOMED CT ontologies, uses the [Snomed OWL Toolkit](https://github.com/IHTSDO/snomed-owl-toolkit).
 
 This service is used for the maintenance of the International Edition and will be kept up to date with all description logic enhancements as they are introduced. It is also backward compatible with all historic RF2 releases.
 
