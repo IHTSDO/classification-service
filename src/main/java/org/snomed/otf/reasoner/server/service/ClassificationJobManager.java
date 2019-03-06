@@ -69,9 +69,9 @@ public class ClassificationJobManager {
 		}, "job-polling-thread").start();
 	}
 
-	public Classification queueClassification(Set<String> previousReleases, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
+	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
-		Classification classification = new Classification(previousReleases, branch, reasonerId);
+		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId);
 
 		// Persist input archive
 		try {
@@ -91,7 +91,15 @@ public class ClassificationJobManager {
 		classification.setStatus(ClassificationStatus.RUNNING);
 		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
-		try (InputStreamSet previousReleaseRf2SnapshotArchives = getInputStreams(classification.getPreviousReleases());
+		Set<String> previousPackages = new HashSet<>();
+		if (classification.getPreviousPackage() != null) {
+			previousPackages.add(classification.getPreviousPackage());
+		}
+		if (classification.getDependencyPackage() != null) {
+			previousPackages.add(classification.getDependencyPackage());
+		}
+
+		try (InputStreamSet previousReleaseRf2SnapshotArchives = getInputStreams(previousPackages);
 			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
 
 			String resultsPath = ResourcePathHelper.getResultsPath(classification);

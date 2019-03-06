@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,13 +12,15 @@ public final class Classification {
 	private final String branch;
 	private final String reasonerId;
 	private final Date created;
-	private final Set<String> previousReleases;
+	private final String previousPackage;
+	private final String dependencyPackage;
 	private ClassificationStatus status;
 	private String errorMessage;
 	private String developerMessage;
 
-	public Classification(Set<String> previousReleases, String branch, String reasonerId) {
-		this.previousReleases = previousReleases;
+	public Classification(String previousPackage,  String dependencyPackage, String branch, String reasonerId) {
+		this.previousPackage = previousPackage;
+		this.dependencyPackage = dependencyPackage;
 		this.classificationId = UUID.randomUUID().toString();
 		this.branch = branch;
 		this.reasonerId = reasonerId;
@@ -47,14 +48,12 @@ public final class Classification {
 		return reasonerId;
 	}
 
-	@JsonIgnore
-	public Set<String> getPreviousReleases() {
-		return previousReleases;
+	public String getPreviousPackage() {
+		return previousPackage;
 	}
 
-	@JsonProperty("previousRelease")
-	public String getPreviousReleaseSetString() {
-		return previousReleases != null ? previousReleases.toString() : null;
+	public String getDependencyPackage() {
+		return dependencyPackage;
 	}
 
 	public void setStatus(ClassificationStatus status) {

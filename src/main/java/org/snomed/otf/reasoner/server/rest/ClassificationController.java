@@ -28,37 +28,21 @@ public class ClassificationController {
 	private ClassificationJobManager classificationJobManager;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
-	@ApiOperation(value = "Create and run a classification job.", notes = "The previousRelease parameter will be split by the comma separator " +
-			"and combined with the previousReleases parameter for backward compatibility. The branch parameter is deprecated and will be removed in a future release.")
-	public ResponseEntity createClassification(@RequestParam(required = false) String previousRelease,
-			@RequestParam(required = false) Set<String> previousReleases,
+	@ApiOperation(value = "Create and run a classification job.", notes = "The dependencyPackage is only required for classifying extensions."
+			+ " The value should be the international release package that the extension is based on.")
+	public ResponseEntity createClassification(@RequestParam(required = false) String previousPackage,
+			@RequestParam(required = false) String dependencyPackage,
 			@RequestParam MultipartFile rf2Delta,
 			@RequestParam(required = false) @Deprecated String branch,
 			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
 			UriComponentsBuilder uriComponentsBuilder) {
 
-		if (Strings.isNullOrEmpty(previousRelease) && (previousReleases == null || previousReleases.isEmpty())) {
-			throw new IllegalArgumentException("Either the 'previousRelease' or 'previousReleases' parameter must be given.");
+		if (Strings.isNullOrEmpty(previousPackage) && Strings.isNullOrEmpty(dependencyPackage)) {
+			throw new IllegalArgumentException("Either the previousPackage or dependencyPackage parameter must be given.");
 		}
-
-		if (previousReleases == null) {
-			previousReleases = new HashSet<>();
-		}
-
-		// Comma split 'previousRelease' and add to 'previousReleases'
-		if (!Strings.isNullOrEmpty(previousRelease)) {
-			String[] split = previousRelease.split("\\,");
-			for (String s : split) {
-				s = s.trim();
-				if (!s.isEmpty()) {
-					previousReleases.add(s);
-				}
-			}
-		}
-
 		Classification classification;
 		try {
-			classification = classificationJobManager.queueClassification(previousReleases, rf2Delta.getInputStream(), reasonerId, branch);
+			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}

@@ -58,7 +58,8 @@ public class ClassificationJobManagerIntegrationTest {
 	@Test
 	public void queueClassification() throws Exception {
 		Classification classification = classificationJobManager.queueClassification(
-				Collections.singleton(baseReleasePath),
+				baseReleasePath,
+				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
 				"MAIN"
