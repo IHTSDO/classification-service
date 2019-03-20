@@ -1,6 +1,7 @@
 package org.snomed.otf.reasoner.server.service;
 
 import com.amazonaws.util.StringInputStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.ihtsdo.otf.dao.resources.ResourceManager;

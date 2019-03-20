@@ -14,6 +14,9 @@ public final class Classification {
 	private ClassificationStatus status;
 	private String statusMessage;
 
+	public Classification() {
+	}
+
 	public Classification(String previousPackage,  String dependencyPackage, String branch, String reasonerId) {
 		this.previousPackage = previousPackage;
 		this.dependencyPackage = dependencyPackage;

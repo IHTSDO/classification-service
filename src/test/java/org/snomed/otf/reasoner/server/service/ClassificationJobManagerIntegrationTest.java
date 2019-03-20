@@ -1,6 +1,6 @@
 package org.snomed.otf.reasoner.server.service;
 
-import com.google.common.io.Files;
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -49,7 +48,7 @@ public class ClassificationJobManagerIntegrationTest {
 		// Copy base into releases directory
 		this.baseReleasePath = "base-snapshot.zip";
 		File baseSnapshot = new File("store/releases/" + this.baseReleasePath);
-		Files.copy(previousReleaseSnapshotArchive, baseSnapshot);
+		FileUtils.copyFile(previousReleaseSnapshotArchive, baseSnapshot);
 		baseSnapshot.deleteOnExit();
 
 		// Zip new content
@@ -94,7 +93,8 @@ public class ClassificationJobManagerIntegrationTest {
 		String responseMessageQueue = "test.job.status.queue";
 
 		classificationJobManager.queueClassification(
-				Collections.singleton(baseReleasePath),
+				baseReleasePath,
+				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
 				responseMessageQueue,
