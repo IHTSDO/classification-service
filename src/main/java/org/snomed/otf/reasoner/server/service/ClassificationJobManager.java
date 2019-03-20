@@ -1,5 +1,11 @@
 package org.snomed.otf.reasoner.server.service;
 
+import com.amazonaws.util.StringInputStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.activemq.command.ActiveMQQueue;
+import org.ihtsdo.otf.dao.resources.ResourceManager;
+import org.ihtsdo.otf.jms.MessagingHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.owltoolkit.service.ReasonerServiceException;
@@ -9,17 +15,23 @@ import org.snomed.otf.reasoner.server.configuration.ClassificationJobResourceCon
 import org.snomed.otf.reasoner.server.configuration.SnomedReleaseResourceConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.pojo.ClassificationStatus;
-import org.ihtsdo.otf.dao.resources.ResourceManager;
+import org.snomed.otf.reasoner.server.pojo.ClassificationStatusAndMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.TextMessage;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 
 @Service
 public class ClassificationJobManager {
@@ -30,12 +42,18 @@ public class ClassificationJobManager {
 
 	private final ResourceManager classificationJobResourceManager;
 
-	private final LinkedBlockingQueue<Classification> classificationQueue;
+	private final MessagingHelper messagingHelper;
 
-	private final Map<String, Classification> classificationMap;
+	private final ObjectMapper objectMapper;
 
 	@Value("${classification.debug.ontology-dump}")
 	private boolean outputOntologyFileForDebug;
+
+	@Value("${classification.jms.job.queue}")
+	private String classificationJobQueue;
+
+	@Value("${classification.jms.status.time-to-live-seconds}")
+	private int messageTimeToLiveSeconds;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -43,52 +61,77 @@ public class ClassificationJobManager {
 			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
 			@Autowired ClassificationJobResourceConfiguration classificationJobResourceConfiguration,
 			@Autowired ResourceLoader cloudResourceLoader,
-			@Autowired SnomedReasonerService snomedReasonerService) {
+			@Autowired SnomedReasonerService snomedReasonerService,
+			@Autowired MessagingHelper messagingHelper,
+			@Autowired ObjectMapper objectMapper) {
 
 		snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
 		classificationJobResourceManager = new ResourceManager(classificationJobResourceConfiguration, cloudResourceLoader);
 		this.snomedReasonerService = snomedReasonerService;
-		classificationQueue = new LinkedBlockingQueue<>();
-		classificationMap = new HashMap<>();
+		this.messagingHelper = messagingHelper;
+		this.objectMapper = objectMapper;
 	}
 
-	@PostConstruct
-	public void init() {
-		new Thread(() -> {
-			try {
-				Classification classification;
-				while (true) {
-					if ((classification = classificationQueue.poll(1, TimeUnit.SECONDS)) != null) {
-						classify(classification);
-					}
-				}
-			} catch (InterruptedException e) {
-				// Nothing wrong
-			}
-			logger.info("Shutting down.");
-		}, "job-polling-thread").start();
-	}
+	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive,
+			String reasonerId, String responseMessageQueue, String branch) throws IOException {
 
-	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive, String reasonerId, String branch) throws IOException {
 		// Create classification configuration
 		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId);
 
 		// Persist input archive
 		try {
 			classificationJobResourceManager.writeResource(ResourcePathHelper.getInputDeltaPath(classification), snomedRf2DeltaInputArchive);
+			saveClassification(classification);
 		} catch (IOException e) {
 			throw new IOException("Failed to persist input archive.", e);
 		}
 
-		// Add to queue
-		classificationMap.put(classification.getClassificationId(), classification);
-		classificationQueue.add(classification);
+		// Add to JMS message queue
+		try {
+			ActiveMQQueue responseDestination = responseMessageQueue == null ? null : new ActiveMQQueue(responseMessageQueue);
+			messagingHelper.send(new ActiveMQQueue(classificationJobQueue), classification, null, responseDestination, messageTimeToLiveSeconds);
+		} catch (JMSException e) {
+			throw new IOException("Failed to add classification job to the message queue.", e);
+		}
 
 		return classification;
 	}
 
-	private void classify(Classification classification) {
-		classification.setStatus(ClassificationStatus.RUNNING);
+	private void saveClassification(Classification classification) {
+		try {
+			String classificationString = objectMapper.writeValueAsString(classification);
+			classificationJobResourceManager.writeResource(
+					ResourcePathHelper.getClassificationPathFromToday(classification.getClassificationId()),
+					new StringInputStream(classificationString));
+		} catch (IOException e) {
+			logger.error("Failed to save classification {}", classification.getClassificationId(), e);
+		}
+	}
+
+	@JmsListener(destination = "${classification.jms.job.queue}")
+	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
+		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
+
+		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
+		classify(classification, statusAndMessage -> {
+			// Update classification in resource store
+			classification.setStatus(statusAndMessage.getStatus());
+			classification.setStatusMessage(statusAndMessage.getStatusMessage());
+			saveClassification(classification);
+
+			// Send notification via JMS
+			if (jmsReplyTo != null) {
+				try {
+					messagingHelper.send(jmsReplyTo, statusAndMessage);
+				} catch (JsonProcessingException | JMSException e) {
+					logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
+				}
+			}
+		});
+	}
+
+	private void classify(Classification classification, Consumer<ClassificationStatusAndMessage> statusConsumer) {
+		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING));
 		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
 		Set<String> previousPackages = new HashSet<>();
@@ -112,13 +155,12 @@ public class ClassificationJobManager {
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
 			}
-			classification.setStatus(ClassificationStatus.COMPLETED);
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED));
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
-		} catch (ReasonerServiceException e) {
-			classificationFailed(classification, e, e.getMessage());
-		} catch (IOException e) {
-			classificationFailed(classification, e, "Failed to read or write RF2 files.");
+		} catch (ReasonerServiceException | IOException e) {
+			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
 		}
 	}
 
@@ -147,18 +189,28 @@ public class ClassificationJobManager {
 		return new InputStreamSet(previousReleaseStreams.toArray(new InputStream[]{}));
 	}
 
-	private void classificationFailed(Classification classification, Exception e, String message) {
-		logger.error("Classification failed {}, branch {}. " + message, classification.getClassificationId(), classification.getBranch(), e);
-		classification.setStatus(ClassificationStatus.FAILED);
-		classification.setErrorMessage(message);
-		classification.setDeveloperMessage(e.getMessage());
-	}
-
-	public Classification getClassification(String classificationId) {
-		return classificationMap.get(classificationId);
+	public Classification getClassification(String classificationId) throws FileNotFoundException {
+		// Classifications are stored by date. We will guess the date and return nothing if the classification was more than 5 days ago.
+		for (int daysInPast = 0; daysInPast <= 5; daysInPast++) {
+			String classificationPath = ResourcePathHelper.getClassificationPathFromPast(classificationId, daysInPast);
+			try {
+				InputStream inputStream = classificationJobResourceManager.readResourceStreamOrNullIfNotExists(classificationPath);
+				if (inputStream != null) {
+					try {
+						return objectMapper.readValue(inputStream, Classification.class);
+					} finally {
+						inputStream.close();
+					}
+				}
+			} catch (IOException e) {
+				logger.error("Failed to load classification from store.", e);
+			}
+		}
+		throw new FileNotFoundException("Classification with ID " + classificationId + " not found.");
 	}
 
 	public InputStream getClassificationResults(Classification classification) throws IOException {
 		return classificationJobResourceManager.readResourceStream(ResourcePathHelper.getResultsPath(classification));
 	}
+
 }
