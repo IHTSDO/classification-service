@@ -11,7 +11,7 @@ import org.springframework.jms.support.converter.MessageType;
 
 @SpringBootApplication
 @EnableJms
-public class Configuration {
+public abstract class Configuration {
 
 	@Bean
 	public SnomedReasonerService getSnomedReasonerService() {
