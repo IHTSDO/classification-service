@@ -21,14 +21,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -142,15 +141,20 @@ public class ClassificationJobManager {
 			previousPackages.add(classification.getDependencyPackage());
 		}
 
+		File tempDeltaFile = null;
 		try (InputStreamSet previousReleaseRf2SnapshotArchives = getInputStreams(previousPackages);
 			 InputStream currentReleaseRf2DeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
 
+			tempDeltaFile = Files.createTempFile("classification-delta-" + classification.getClassificationId(), ".zip").toFile();
+			StreamUtils.copy(currentReleaseRf2DeltaArchive, new FileOutputStream(tempDeltaFile));
+
 			String resultsPath = ResourcePathHelper.getResultsPath(classification);
-			try (OutputStream resultsOutputStream = classificationJobResourceManager.writeResourceStream(resultsPath)) {
+			try (OutputStream resultsOutputStream = classificationJobResourceManager.writeResourceStream(resultsPath);
+				 InputStream deltaInputStream = new FileInputStream(tempDeltaFile)) {
 				snomedReasonerService.classify(
 						classification.getClassificationId(),
 						previousReleaseRf2SnapshotArchives,
-						currentReleaseRf2DeltaArchive,
+						deltaInputStream,
 						resultsOutputStream,
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
@@ -161,6 +165,10 @@ public class ClassificationJobManager {
 		} catch (ReasonerServiceException | IOException e) {
 			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
 			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
+		} finally {
+			if (tempDeltaFile != null) {
+				tempDeltaFile.delete();
+			}
 		}
 	}
 
