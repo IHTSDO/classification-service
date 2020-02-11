@@ -1,6 +1,5 @@
 package org.snomed.otf.reasoner.server.service;
 
-import com.amazonaws.services.s3.internal.S3AbortableInputStream;
 import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -156,30 +155,12 @@ public class ClassificationJobManager {
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
 			}
-
-			// Does nothing if not using AWS
-			handleAWSStreamsClosure(previousReleaseRf2SnapshotArchives, currentReleaseRf2DeltaArchive);
-
 			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED));
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException | IOException e) {
 			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
 			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
-		}
-	}
-
-	private void handleAWSStreamsClosure(InputStreamSet inputStreamSet, InputStream inputStream) {
-		for (InputStream stream : inputStreamSet.getFileInputStreams()) {
-			handleAWSStreamClosure(stream);
-		}
-		handleAWSStreamClosure(inputStream);
-	}
-
-	private void handleAWSStreamClosure(InputStream inputStream) {
-		if (inputStream instanceof S3AbortableInputStream) {
-			S3AbortableInputStream s3Stream = (S3AbortableInputStream) inputStream;
-			s3Stream.abort();
 		}
 	}
 
