@@ -6,7 +6,7 @@
 
 	<groupId>org.snomed.otf</groupId>
 	<artifactId>classification-service</artifactId>
-	<version>6.0.1-SNAPSHOT</version>
+	<version>6.0.1</version>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
