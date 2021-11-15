@@ -130,7 +130,7 @@ public class ClassificationJobManager {
 	}
 
 	private void classify(Classification classification, Consumer<ClassificationStatusAndMessage> statusConsumer) {
-		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING));
+		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING, null, classification.getClassificationId()));
 		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
 		Set<String> previousPackages = new HashSet<>();
@@ -159,12 +159,12 @@ public class ClassificationJobManager {
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
 			}
-			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED));
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED, null, classification.getClassificationId()));
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException | IOException e) {
 			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
-			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage(), classification.getClassificationId()));
 		} finally {
 			if (tempDeltaFile != null) {
 				tempDeltaFile.delete();
