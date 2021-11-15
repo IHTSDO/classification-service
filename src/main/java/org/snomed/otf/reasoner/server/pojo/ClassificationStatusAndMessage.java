@@ -4,6 +4,7 @@ public class ClassificationStatusAndMessage {
 
 	private ClassificationStatus status;
 	private String statusMessage;
+	private String id;
 
 	public ClassificationStatusAndMessage() {
 	}
@@ -15,6 +16,12 @@ public class ClassificationStatusAndMessage {
 	public ClassificationStatusAndMessage(ClassificationStatus status, String statusMessage) {
 		this.status = status;
 		this.statusMessage = statusMessage;
+	}
+
+	public ClassificationStatusAndMessage(ClassificationStatus status, String statusMessage, String id) {
+		this.status = status;
+		this.statusMessage = statusMessage;
+		this.id = id;
 	}
 
 	public ClassificationStatus getStatus() {
@@ -31,6 +38,14 @@ public class ClassificationStatusAndMessage {
 
 	public void setStatusMessage(String statusMessage) {
 		this.statusMessage = statusMessage;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	@Override
