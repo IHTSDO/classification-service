@@ -13,6 +13,7 @@ public final class Classification {
 	private String dependencyPackage;
 	private ClassificationStatus status;
 	private String statusMessage;
+	private String messageStatusDestination;
 
 	public Classification() {
 	}
@@ -23,6 +24,17 @@ public final class Classification {
 		this.classificationId = UUID.randomUUID().toString();
 		this.branch = branch;
 		this.reasonerId = reasonerId;
+		status = ClassificationStatus.SCHEDULED;
+		created = new Date();
+	}
+
+	public Classification(String previousPackage, String dependencyPackage, String branch, String reasonerId, String messageStatusDestination) {
+		this.previousPackage = previousPackage;
+		this.dependencyPackage = dependencyPackage;
+		this.classificationId = UUID.randomUUID().toString();
+		this.branch = branch;
+		this.reasonerId = reasonerId;
+		this.messageStatusDestination = messageStatusDestination;
 		status = ClassificationStatus.SCHEDULED;
 		created = new Date();
 	}
@@ -67,4 +79,11 @@ public final class Classification {
 		return statusMessage;
 	}
 
+	public String getMessageStatusDestination() {
+		return messageStatusDestination;
+	}
+
+	public void setMessageStatusDestination(String messageStatusDestination) {
+		this.messageStatusDestination = messageStatusDestination;
+	}
 }
