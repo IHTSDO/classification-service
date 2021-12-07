@@ -25,6 +25,7 @@ import org.springframework.util.StreamUtils;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.Session;
 import javax.jms.TextMessage;
 import java.io.*;
 import java.nio.file.Files;
@@ -72,10 +73,10 @@ public class ClassificationJobManager {
 	}
 
 	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive,
-			String reasonerId, String responseMessageQueue, String branch) throws IOException {
+											  String reasonerId, String responseMessageQueue, String branch, String messageStatusDestination) throws IOException {
 
 		// Create classification configuration
-		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId);
+		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId, messageStatusDestination);
 
 		// Persist input archive
 		try {
@@ -108,7 +109,7 @@ public class ClassificationJobManager {
 	}
 
 	@JmsListener(destination = "${classification.jms.job.queue}")
-	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
+	public void consumeClassificationJob(TextMessage classificationMessage, Session session) throws JMSException, IOException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
 
 		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
@@ -126,6 +127,8 @@ public class ClassificationJobManager {
 					logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
 				}
 			}
+
+			sendStatusToDestination(classification.getMessageStatusDestination(), classification.getClassificationId(), statusAndMessage.getStatus(), session);
 		});
 	}
 
@@ -221,4 +224,18 @@ public class ClassificationJobManager {
 		return classificationJobResourceManager.readResourceStream(ResourcePathHelper.getResultsPath(classification));
 	}
 
+	private void sendStatusToDestination(String destination, String classificationId, ClassificationStatus classificationStatus, Session session) {
+		if (destination == null) {
+			return;
+		}
+
+		ClassificationStatusAndMessage payload = new ClassificationStatusAndMessage(classificationStatus, null, classificationId);
+		try {
+			ActiveMQQueue queue = new ActiveMQQueue(destination);
+			messagingHelper.send(queue, payload, null, null, messageTimeToLiveSeconds);
+			session.commit(); // JmsListeners operate within a transaction. Therefore, to periodically send a status update, committing is required.
+		} catch (JsonProcessingException | JMSException e) {
+			logger.error("Failed to send status update {} to {}", payload, destination);
+		}
+	}
 }
