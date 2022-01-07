@@ -25,6 +25,7 @@ import org.springframework.util.StreamUtils;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.Session;
 import javax.jms.TextMessage;
 import java.io.*;
 import java.nio.file.Files;
@@ -72,10 +73,10 @@ public class ClassificationJobManager {
 	}
 
 	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive,
-			String reasonerId, String responseMessageQueue, String branch) throws IOException {
+											  String reasonerId, String responseMessageQueue, String branch, String messageStatusDestination) throws IOException {
 
 		// Create classification configuration
-		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId);
+		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId, messageStatusDestination);
 
 		// Persist input archive
 		try {
@@ -108,7 +109,7 @@ public class ClassificationJobManager {
 	}
 
 	@JmsListener(destination = "${classification.jms.job.queue}")
-	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
+	public void consumeClassificationJob(TextMessage classificationMessage, Session session) throws JMSException, IOException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
 
 		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
@@ -126,11 +127,13 @@ public class ClassificationJobManager {
 					logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
 				}
 			}
+
+			sendStatusToDestination(classification.getMessageStatusDestination(), classification.getClassificationId(), statusAndMessage.getStatus(), session);
 		});
 	}
 
 	private void classify(Classification classification, Consumer<ClassificationStatusAndMessage> statusConsumer) {
-		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING));
+		statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.RUNNING, null, classification.getClassificationId()));
 		logger.info("Running classification {}, branch {}", classification.getClassificationId(), classification.getBranch());
 
 		Set<String> previousPackages = new HashSet<>();
@@ -159,12 +162,12 @@ public class ClassificationJobManager {
 						classification.getReasonerId(),
 						outputOntologyFileForDebug);
 			}
-			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED));
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED, null, classification.getClassificationId()));
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException | IOException e) {
 			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
-			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage()));
+			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage(), classification.getClassificationId()));
 		} finally {
 			if (tempDeltaFile != null) {
 				tempDeltaFile.delete();
@@ -221,4 +224,18 @@ public class ClassificationJobManager {
 		return classificationJobResourceManager.readResourceStream(ResourcePathHelper.getResultsPath(classification));
 	}
 
+	private void sendStatusToDestination(String destination, String classificationId, ClassificationStatus classificationStatus, Session session) {
+		if (destination == null) {
+			return;
+		}
+
+		ClassificationStatusAndMessage payload = new ClassificationStatusAndMessage(classificationStatus, null, classificationId);
+		try {
+			ActiveMQQueue queue = new ActiveMQQueue(destination);
+			messagingHelper.send(queue, payload, null, null, messageTimeToLiveSeconds);
+			session.commit(); // JmsListeners operate within a transaction. Therefore, to periodically send a status update, committing is required.
+		} catch (JsonProcessingException | JMSException e) {
+			logger.error("Failed to send status update {} to {}", payload, destination);
+		}
+	}
 }
