@@ -37,7 +37,6 @@ public class ClassificationController {
 			@RequestParam(required = false) String responseMessageQueue,
 			@RequestParam(required = false) @Deprecated String branch,
 			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
-			@RequestParam(required = false) String messageStatusDestination,
 			UriComponentsBuilder uriComponentsBuilder) {
 
 		if (Strings.isNullOrEmpty(previousPackage) && Strings.isNullOrEmpty(dependencyPackage)) {
@@ -45,7 +44,7 @@ public class ClassificationController {
 		}
 		Classification classification;
 		try {
-			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, responseMessageQueue, branch, messageStatusDestination);
+			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, responseMessageQueue, branch);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to persist RF2 delta archive", e);
 		}

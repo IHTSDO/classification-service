@@ -63,7 +63,7 @@ public class ClassificationJobManagerIntegrationTest {
 				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
-				null, "MAIN", null
+				null, "MAIN"
 		);
 
 		GregorianCalendar timeout = new GregorianCalendar();
@@ -92,14 +92,13 @@ public class ClassificationJobManagerIntegrationTest {
 
 		String responseMessageQueue = "test.job.status.queue";
 
-		classificationJobManager.queueClassification(
+		Classification classification = classificationJobManager.queueClassification(
 				baseReleasePath,
 				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
 				responseMessageQueue,
-				"MAIN", null
-		);
+				"MAIN");
 
 		GregorianCalendar timeout = new GregorianCalendar();
 		timeout.add(Calendar.MINUTE, 2);
@@ -112,6 +111,7 @@ public class ClassificationJobManagerIntegrationTest {
 			// No need to read anything here, status comes in via JMS in readJobStatusUpdate method
 		}
 
+		assertEquals(classification.getClassificationId(), classificationStatus.getId());
 		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
 	}
 

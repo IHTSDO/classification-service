@@ -12,6 +12,9 @@ import org.springframework.jms.support.converter.MappingJackson2MessageConverter
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @SpringBootApplication
 @EnableJms
 public abstract class Configuration {
@@ -39,6 +42,11 @@ public abstract class Configuration {
 	@Bean
 	public MessagingHelper messagingHelper() {
 		return new MessagingHelper();
+	}
+
+	@Bean
+	public ExecutorService cachedTaskExecutors() {
+		return Executors.newCachedThreadPool();
 	}
 
 }

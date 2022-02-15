@@ -31,10 +31,14 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 @Service
 public class ClassificationJobManager {
+
+	@Autowired
+	private ExecutorService executorService;
 
 	private final SnomedReasonerService snomedReasonerService;
 
@@ -73,10 +77,10 @@ public class ClassificationJobManager {
 	}
 
 	public Classification queueClassification(String previousPackage, String dependencyPackage, InputStream snomedRf2DeltaInputArchive,
-											  String reasonerId, String responseMessageQueue, String branch, String messageStatusDestination) throws IOException {
+											  String reasonerId, String responseMessageQueue, String branch) throws IOException {
 
 		// Create classification configuration
-		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId, messageStatusDestination);
+		Classification classification = new Classification(previousPackage, dependencyPackage, branch, reasonerId);
 
 		// Persist input archive
 		try {
@@ -121,14 +125,19 @@ public class ClassificationJobManager {
 
 			// Send notification via JMS
 			if (jmsReplyTo != null) {
-				try {
-					messagingHelper.send(jmsReplyTo, statusAndMessage);
-				} catch (JsonProcessingException | JMSException e) {
-					logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
-				}
+				sendStatusAsync(jmsReplyTo, statusAndMessage);
 			}
+		});
+	}
 
-			sendStatusToDestination(classification.getMessageStatusDestination(), classification.getClassificationId(), statusAndMessage.getStatus(), session);
+	private void sendStatusAsync(Destination jmsReplyTo, ClassificationStatusAndMessage statusAndMessage) {
+		executorService.submit(() -> {
+			// Send notification via JMS
+			try {
+				messagingHelper.send(jmsReplyTo, statusAndMessage);
+			} catch (JsonProcessingException | JMSException e) {
+				logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
+			}
 		});
 	}
 
@@ -222,20 +231,5 @@ public class ClassificationJobManager {
 
 	public InputStream getClassificationResults(Classification classification) throws IOException {
 		return classificationJobResourceManager.readResourceStream(ResourcePathHelper.getResultsPath(classification));
-	}
-
-	private void sendStatusToDestination(String destination, String classificationId, ClassificationStatus classificationStatus, Session session) {
-		if (destination == null) {
-			return;
-		}
-
-		ClassificationStatusAndMessage payload = new ClassificationStatusAndMessage(classificationStatus, null, classificationId);
-		try {
-			ActiveMQQueue queue = new ActiveMQQueue(destination);
-			messagingHelper.send(queue, payload, null, null, messageTimeToLiveSeconds);
-			session.commit(); // JmsListeners operate within a transaction. Therefore, to periodically send a status update, committing is required.
-		} catch (JsonProcessingException | JMSException e) {
-			logger.error("Failed to send status update {} to {}", payload, destination);
-		}
 	}
 }
