@@ -22,6 +22,8 @@
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
 		<spring-cloud-aws-version>1.2.4.RELEASE</spring-cloud-aws-version>
+		<slf4j.version>1.7.35</slf4j.version>
+		<log4j.version>2.17.2</log4j.version>
 	</properties>
 
 	<dependencies>
@@ -29,7 +31,7 @@
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-owl-toolkit</artifactId>
-			<version>3.0.5</version>
+			<version>3.0.7</version>
 		</dependency>
 
 		<!-- Snomed International common -->
@@ -72,6 +74,28 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-aws-core</artifactId>
 			<version>${spring-cloud-aws-version}</version>
+		</dependency>
+
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>${log4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>${log4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-to-slf4j</artifactId>
+			<version>${log4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-1.2-api</artifactId>
+			<version>${log4j.version}</version>
 		</dependency>
 
 		<!-- Swagger API Docs -->

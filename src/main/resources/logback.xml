@@ -2,4 +2,5 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
     <logger name="org.semanticweb.elk" level="INFO"/>
+    <logger name="org.semanticweb.elk.reasoner.indexing.hierarchy.IndexObjectConverter" level="ERROR"/>
 </configuration>
