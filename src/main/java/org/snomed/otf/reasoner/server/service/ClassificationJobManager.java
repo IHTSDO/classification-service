@@ -4,6 +4,7 @@ import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.activemq.command.ActiveMQTopic;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
@@ -92,7 +93,7 @@ public class ClassificationJobManager {
 
 		// Add to JMS message queue
 		try {
-			ActiveMQQueue responseDestination = responseMessageQueue == null ? null : new ActiveMQQueue(responseMessageQueue);
+			ActiveMQTopic responseDestination = responseMessageQueue == null ? null : new ActiveMQTopic(responseMessageQueue);
 			messagingHelper.send(new ActiveMQQueue(classificationJobQueue), classification, null, responseDestination, messageTimeToLiveSeconds);
 		} catch (JMSException e) {
 			throw new IOException("Failed to add classification job to the message queue.", e);
@@ -116,7 +117,7 @@ public class ClassificationJobManager {
 	public void consumeClassificationJob(TextMessage classificationMessage, Session session) throws JMSException, IOException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
 
-		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
+		ActiveMQTopic jmsReplyTo = (ActiveMQTopic) classificationMessage.getJMSReplyTo();
 		classify(classification, statusAndMessage -> {
 			// Update classification in resource store
 			classification.setStatus(statusAndMessage.getStatus());
@@ -130,11 +131,11 @@ public class ClassificationJobManager {
 		});
 	}
 
-	private void sendStatusAsync(Destination jmsReplyTo, ClassificationStatusAndMessage statusAndMessage) {
+	private void sendStatusAsync(ActiveMQTopic jmsReplyTo, ClassificationStatusAndMessage statusAndMessage) {
 		executorService.submit(() -> {
 			// Send notification via JMS
 			try {
-				messagingHelper.send(jmsReplyTo, statusAndMessage);
+				messagingHelper.publish(jmsReplyTo.getTopicName(), statusAndMessage, null, messageTimeToLiveSeconds);
 			} catch (JsonProcessingException | JMSException e) {
 				logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
 			}

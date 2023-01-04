@@ -1,5 +1,6 @@
 package org.snomed.otf.reasoner.server.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +34,10 @@ public class ClassificationJobManagerIntegrationTest {
 
 	@Autowired
 	private ClassificationJobManager classificationJobManager;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	private String baseReleasePath;
 	private File newContentDeltaArchive;
 
@@ -82,26 +87,27 @@ public class ClassificationJobManagerIntegrationTest {
 
 	private ClassificationStatusAndMessage classificationStatus;
 
-	@JmsListener(destination = "test.job.status.queue")
-	public void readJobStatusUpdate(ClassificationStatusAndMessage classificationStatus) {
+	@JmsListener(destination = "test.job.status.topic", containerFactory = "topicJmsListenerContainerFactory")
+	public void readJobStatusUpdate(String content) throws IOException {
+		ClassificationStatusAndMessage classificationStatus = objectMapper.readValue(content, ClassificationStatusAndMessage.class);
 		this.classificationStatus = classificationStatus;
 	}
 
 	@Test
 	public void queueClassificationReadStatusViaJMS() throws Exception {
 
-		String responseMessageQueue = "test.job.status.queue";
+		String responseMessageTopic = "test.job.status.topic";
 
 		Classification classification = classificationJobManager.queueClassification(
 				baseReleasePath,
 				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
-				responseMessageQueue,
+				responseMessageTopic,
 				"MAIN");
 
 		GregorianCalendar timeout = new GregorianCalendar();
-		timeout.add(Calendar.MINUTE, 2);
+		timeout.add(Calendar.MINUTE, 1);
 
 		while (classificationStatus == null || classificationStatus.getStatus() == SCHEDULED || classificationStatus.getStatus() == RUNNING) {
 			if (new Date().after(timeout.getTime())) {
