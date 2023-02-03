@@ -6,6 +6,7 @@ import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 
@@ -15,6 +16,7 @@ import javax.jms.ConnectionFactory;
 public class TestConfiguration extends org.snomed.otf.reasoner.server.configuration.Configuration {
 
 	@Autowired
+	@Lazy
 	private ConnectionFactory connectionFactory;
 
 	@Bean

@@ -1,7 +1,5 @@
 package org.snomed.otf.reasoner.server.configuration;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.springframework.beans.factory.annotation.Value;

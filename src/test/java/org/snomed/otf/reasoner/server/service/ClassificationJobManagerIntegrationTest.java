@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
@@ -90,8 +89,7 @@ public class ClassificationJobManagerIntegrationTest {
 
 	@JmsListener(destination = "test.job.status.topic", containerFactory = "topicJmsListenerContainerFactory")
 	public void readJobStatusUpdate(String content) throws IOException {
-		ClassificationStatusAndMessage classificationStatus = objectMapper.readValue(content, ClassificationStatusAndMessage.class);
-		this.classificationStatus = classificationStatus;
+		this.classificationStatus = objectMapper.readValue(content, ClassificationStatusAndMessage.class);
 	}
 
 	@Test
