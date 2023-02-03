@@ -2,9 +2,9 @@ package org.snomed.otf.reasoner.server.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.reasoner.server.configuration.TestConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -14,7 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,11 +24,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.snomed.otf.reasoner.server.pojo.ClassificationStatus.*;
+import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {TestConfiguration.class})
 @ActiveProfiles("test")
 public class ClassificationJobManagerIntegrationTest {
@@ -41,7 +42,7 @@ public class ClassificationJobManagerIntegrationTest {
 	private String baseReleasePath;
 	private File newContentDeltaArchive;
 
-	@Before
+	@BeforeEach
 	public void setup() throws IOException {
 		String baseReleaseRF2Path = "src/test/resources/SnomedCT_MiniRF2_Base_snapshot";
 		String deltaRF2Path = "src/test/resources/SnomedCT_MiniRF2_Add_Diabetes_delta";
@@ -117,7 +118,7 @@ public class ClassificationJobManagerIntegrationTest {
 			// No need to read anything here, status comes in via JMS in readJobStatusUpdate method
 		}
 
-		assertEquals(classification.getClassificationId(), classificationStatus.getId());
+		assertEquals("Classification ID's equal", classification.getClassificationId(), classificationStatus.getId());
 		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
 	}
 
