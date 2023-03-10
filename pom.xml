@@ -5,138 +5,29 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.8</version>
+		<groupId>org.snomed</groupId>
+		<artifactId>snomed-parent-bom</artifactId>
+		<version>1.0.0</version>
 	</parent>
 
 	<groupId>org.snomed.otf</groupId>
 	<artifactId>classification-service</artifactId>
 	<version>7.2.0-SNAPSHOT</version>
 
-	<properties>
-		<java.version>11</java.version>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>
-		<packageName>${project.artifactId}</packageName>
-		<execFinalName>${project.build.finalName}.jar</execFinalName>
-		<spring-boot.version>${project.parent.version}</spring-boot.version>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <type>pom</type>
+        </dependency>
 
-		<spring-cloud-aws-version>1.2.4.RELEASE</spring-cloud-aws-version>
-		<slf4j.version>1.7.35</slf4j.version>
-		<log4j.version>2.17.2</log4j.version>
-		<snomed-owl-toolkit.version>3.0.9</snomed-owl-toolkit.version>
-		<otf-common.version>2.2.0</otf-common.version>
-		<resource-manager.version>2.2.0</resource-manager.version>
-		<jaxb-api.artifactId>jaxb-api</jaxb-api.artifactId>
-		<springfox-swagger2.version>2.5.0</springfox-swagger2.version>
-		<springfox-swagger-ui.version>2.5.0</springfox-swagger-ui.version>
-	</properties>
-
-	<dependencyManagement>
-		<dependencies>
-			<!-- SNOMED OWL Toolkit (does all the heavy lifting) -->
-			<dependency>
-				<groupId>org.snomed.otf</groupId>
-				<artifactId>snomed-owl-toolkit</artifactId>
-				<version>${snomed-owl-toolkit.version}</version>
-			</dependency>
-			<!-- Snomed International common -->
-			<dependency>
-				<groupId>org.ihtsdo.otf.common</groupId>
-				<artifactId>otf-common</artifactId>
-				<version>${otf-common.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.ihtsdo.otf.common</groupId>
-				<artifactId>resource-manager</artifactId>
-				<version>${resource-manager.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.xml.bind</groupId>
-				<artifactId>${jaxb-api.artifactId}</artifactId>
-			</dependency>
-			<!-- Spring Boot -->
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-web</artifactId>
-				<version>${spring-boot.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-security</artifactId>
-				<version>${spring-boot.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-activemq</artifactId>
-				<version>${spring-boot.version}</version>
-			</dependency>
-			<!-- Spring Cloud -->
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-aws-autoconfigure</artifactId>
-				<version>${spring-cloud-aws-version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-aws-core</artifactId>
-				<version>${spring-cloud-aws-version}</version>
-			</dependency>
-			<!-- Logging -->
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-api</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-core</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-to-slf4j</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-1.2-api</artifactId>
-				<version>${log4j.version}</version>
-			</dependency>
-			<!-- Swagger API Docs -->
-			<dependency>
-				<groupId>io.springfox</groupId>
-				<artifactId>springfox-swagger2</artifactId>
-				<version>${springfox-swagger2.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.springfox</groupId>
-				<artifactId>springfox-swagger-ui</artifactId>
-				<version>${springfox-swagger-ui.version}</version>
-			</dependency>
-			<!-- Test -->
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-test</artifactId>
-				<version>${spring-boot.version}</version>
-				<scope>test</scope>
-				<exclusions>
-					<exclusion>
-						<groupId>org.skyscreamer</groupId>
-						<artifactId>jsonassert</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
-	<dependencies>
+		<!-- SNOMED OWL Toolkit (does all the heavy lifting) -->
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-owl-toolkit</artifactId>
 		</dependency>
+
+		<!-- Snomed International common -->
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
@@ -149,6 +40,8 @@
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
 		</dependency>
+
+		<!-- Spring Boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -161,6 +54,8 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-activemq</artifactId>
 		</dependency>
+
+		<!-- Spring Cloud -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-aws-autoconfigure</artifactId>
@@ -169,6 +64,8 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-aws-core</artifactId>
 		</dependency>
+
+		<!-- Logging -->
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
@@ -185,6 +82,8 @@
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-1.2-api</artifactId>
 		</dependency>
+
+		<!-- Swagger API Docs -->
 		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger2</artifactId>
@@ -193,115 +92,21 @@
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger-ui</artifactId>
 		</dependency>
+
+		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
-		</dependency>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.skyscreamer</groupId>
+					<artifactId>jsonassert</artifactId>
+				</exclusion>
+			</exclusions>
+        </dependency>
+
+
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>build-info</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>cobertura-maven-plugin</artifactId>
-				<version>2.7</version>
-				<configuration>
-					<formats>
-						<format>html</format>
-						<format>xml</format>
-					</formats>
-					<check />
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
-	<profiles>
-		<profile>
-			<id>deb</id>
-			<build>
-				<plugins>
-					<!-- Debian packaging -->
-					<plugin>
-						<groupId>org.vafer</groupId>
-						<artifactId>jdeb</artifactId>
-						<version>1.1.1</version>
-						<executions>
-							<execution>
-								<phase>package</phase>
-								<goals>
-									<goal>jdeb</goal>
-								</goals>
-								<configuration>
-									<deb>${project.build.directory}/${packageName}-${project.version}-all.deb</deb>
-									<controlDir>${basedir}/src/deb/control</controlDir>
-									<snapshotExpand>true</snapshotExpand>
-									<snapshotEnv>BUILD_NUMBER</snapshotEnv>
-									<verbose>true</verbose>
-									<classifier>all</classifier>
-									<signPackage>false</signPackage>
-									<dataSet>
-										<data>
-											<src>${project.build.directory}/${execFinalName}</src>
-											<dst>app.jar</dst>
-											<type>file</type>
-											<mapper>
-												<type>perm</type>
-												<prefix>/opt/${packageName}/</prefix>
-											</mapper>
-										</data>
-										<data>
-											<src>${basedir}/src/deb/supervisor.conf</src>
-											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
-											<type>file</type>
-										</data>
-									</dataSet>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
-
-	<repositories>
-		<repository>
-			<id>ihtsdo-releases</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
-		</repository>
-		<repository>
-			<id>ihtsdo-snapshots</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
-		</repository>
-	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus3 Releases</name>
-			<url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus3 Snapshots</name>
-			<url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
 
 </project>
