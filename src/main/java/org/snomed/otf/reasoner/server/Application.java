@@ -4,8 +4,6 @@ import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.reasoner.server.configuration.Configuration;
-import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -18,9 +16,6 @@ import static springfox.documentation.builders.PathSelectors.regex;
 
 @EnableSwagger2
 public class Application extends Configuration {
-
-	@Autowired
-	private ClassificationJobManager classificationJobManager;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 

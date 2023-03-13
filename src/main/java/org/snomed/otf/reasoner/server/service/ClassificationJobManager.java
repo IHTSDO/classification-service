@@ -24,7 +24,6 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TextMessage;
