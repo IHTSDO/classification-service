@@ -7,20 +7,14 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>1.0.0</version>
+		<version>1.0.1</version>
 	</parent>
 
 	<groupId>org.snomed.otf</groupId>
 	<artifactId>classification-service</artifactId>
 	<version>7.2.0-SNAPSHOT</version>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-dependencies</artifactId>
-            <type>pom</type>
-        </dependency>
-
+	<dependencies>
 		<!-- SNOMED OWL Toolkit (does all the heavy lifting) -->
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
@@ -95,6 +89,12 @@
 
 		<!-- Test -->
 		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-boot-starter</artifactId>
+		</dependency>
+
+		<!-- Test -->
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
@@ -104,9 +104,38 @@
 					<artifactId>jsonassert</artifactId>
 				</exclusion>
 			</exclusions>
-        </dependency>
-
-
+		</dependency>
 	</dependencies>
-
+	<repositories>
+		<repository>
+			<id>ihtsdo-releases</id>
+			<url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>ihtsdo-snapshots</id>
+			<url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
+			<releases><enabled>false</enabled></releases>
+		</repository>
+	</repositories>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot-maven-plugin.version}</version>
+				<configuration>
+					<mainClass>org.snomed.otf.reasoner.server.Application</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>
