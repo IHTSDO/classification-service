@@ -12,8 +12,7 @@
 
 	<groupId>org.snomed.otf</groupId>
 	<artifactId>classification-service</artifactId>
-	<version>7.1.0</version>
-
+	<version>7.1.1-SNAPSHOT</version>
 	<properties>
 		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
