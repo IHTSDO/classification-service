@@ -161,7 +161,7 @@ public class ClassificationJobManager {
 			StreamUtils.copy(currentReleaseRf2DeltaArchive, new FileOutputStream(tempDeltaFile));
 
 			String resultsPath = ResourcePathHelper.getResultsPath(classification);
-			try (OutputStream resultsOutputStream = classificationJobResourceManager.writeResourceStream(resultsPath);
+			try (OutputStream resultsOutputStream = classificationJobResourceManager.openWritableResourceStream(resultsPath);
 				 InputStream deltaInputStream = new FileInputStream(tempDeltaFile)) {
 				snomedReasonerService.classify(
 						classification.getClassificationId(),
