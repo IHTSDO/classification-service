@@ -24,6 +24,7 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -92,7 +93,7 @@ public class ClassificationJobManager {
 
 		// Add to JMS message queue
 		try {
-			ActiveMQTopic responseDestination = responseMessageQueue == null ? null : new ActiveMQTopic(responseMessageQueue);
+			ActiveMQQueue responseDestination = responseMessageQueue == null ? null : new ActiveMQQueue(responseMessageQueue);
 			messagingHelper.send(new ActiveMQQueue(classificationJobQueue), classification, null, responseDestination, messageTimeToLiveSeconds);
 		} catch (JMSException e) {
 			throw new IOException("Failed to add classification job to the message queue.", e);
@@ -113,10 +114,9 @@ public class ClassificationJobManager {
 	}
 
 	@JmsListener(destination = "${classification.jms.job.queue}")
-	public void consumeClassificationJob(TextMessage classificationMessage, Session session) throws JMSException, IOException {
+	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
-
-		ActiveMQTopic jmsReplyTo = (ActiveMQTopic) classificationMessage.getJMSReplyTo();
+		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
 		classify(classification, statusAndMessage -> {
 			// Update classification in resource store
 			classification.setStatus(statusAndMessage.getStatus());
@@ -130,11 +130,11 @@ public class ClassificationJobManager {
 		});
 	}
 
-	private void sendStatusAsync(ActiveMQTopic jmsReplyTo, ClassificationStatusAndMessage statusAndMessage) {
+	private void sendStatusAsync(Destination jmsReplyTo, ClassificationStatusAndMessage statusAndMessage) {
 		executorService.submit(() -> {
 			// Send notification via JMS
 			try {
-				messagingHelper.publish(jmsReplyTo.getTopicName(), statusAndMessage, null, messageTimeToLiveSeconds);
+				messagingHelper.send(jmsReplyTo, statusAndMessage);
 			} catch (JsonProcessingException | JMSException e) {
 				logger.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
 			}

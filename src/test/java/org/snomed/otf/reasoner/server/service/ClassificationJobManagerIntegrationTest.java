@@ -87,22 +87,22 @@ public class ClassificationJobManagerIntegrationTest {
 
 	private ClassificationStatusAndMessage classificationStatus;
 
-	@JmsListener(destination = "test.job.status.topic", containerFactory = "topicJmsListenerContainerFactory")
-	public void readJobStatusUpdate(String content) throws IOException {
-		this.classificationStatus = objectMapper.readValue(content, ClassificationStatusAndMessage.class);
+	@JmsListener(destination = "test.job.status.queue")
+	public void readJobStatusUpdate(ClassificationStatusAndMessage classificationStatus) {
+		this.classificationStatus = classificationStatus;
 	}
 
 	@Test
 	public void queueClassificationReadStatusViaJMS() throws Exception {
 
-		String responseMessageTopic = "test.job.status.topic";
+		String responseMessageQueue = "test.job.status.queue";
 
 		Classification classification = classificationJobManager.queueClassification(
 				baseReleasePath,
 				null,
 				new FileInputStream(newContentDeltaArchive),
 				SnomedReasonerService.ELK_REASONER_FACTORY,
-				responseMessageTopic,
+				responseMessageQueue,
 				"MAIN");
 
 		GregorianCalendar timeout = new GregorianCalendar();
