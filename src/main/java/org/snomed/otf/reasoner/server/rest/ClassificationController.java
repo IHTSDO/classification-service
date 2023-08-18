@@ -31,7 +31,7 @@ public class ClassificationController {
 			+ " The value should be the international release package that the extension is based on." +
 					"Include a responseMessageQueue if you want to receive job status updates via JMS. " +
 					"The branch parameter is deprecated and will be removed in a future release.")
-	public ResponseEntity createClassification(@RequestParam(required = false) String previousPackage,
+	public ResponseEntity<?> createClassification(@RequestParam(required = false) String previousPackage,
 			@RequestParam(required = false) String dependencyPackage,
 			@RequestParam MultipartFile rf2Delta,
 			@RequestParam(required = false) String responseMessageQueue,

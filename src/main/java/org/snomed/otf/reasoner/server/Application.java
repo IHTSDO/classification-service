@@ -17,7 +17,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
 @EnableSwagger2
 public class Application extends Configuration {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) throws OWLOntologyCreationException {
 		SpringApplication.run(Application.class, args);

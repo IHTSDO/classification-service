@@ -4,7 +4,6 @@ import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
@@ -26,7 +25,6 @@ import org.springframework.util.StreamUtils;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
-import javax.jms.Session;
 import javax.jms.TextMessage;
 import java.io.*;
 import java.nio.file.Files;
@@ -60,7 +58,7 @@ public class ClassificationJobManager {
 	@Value("${classification.jms.status.time-to-live-seconds}")
 	private int messageTimeToLiveSeconds;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ClassificationJobManager(
 			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
@@ -175,11 +173,13 @@ public class ClassificationJobManager {
 			logger.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 
 		} catch (ReasonerServiceException | IOException e) {
-			logger.error("Classification failed {}, branch {}. ", e.getMessage(), classification.getClassificationId(), classification.getBranch(), e);
+			logger.error("Classification failed {}, branch {}. ", classification.getClassificationId(), classification.getBranch(), e);
 			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage(), classification.getClassificationId()));
 		} finally {
 			if (tempDeltaFile != null) {
-				tempDeltaFile.delete();
+				if (!tempDeltaFile.delete()) {
+					logger.warn("Failed to delete temp file {}", tempDeltaFile.getAbsolutePath());
+				}
 			}
 		}
 	}
@@ -211,22 +211,19 @@ public class ClassificationJobManager {
 
 	public Classification getClassification(String classificationId) throws FileNotFoundException {
 		// Classifications are stored by date. We will guess the date and return nothing if the classification was more than 5 days ago.
-		for (int daysInPast = 0; daysInPast <= 5; daysInPast++) {
-			String classificationPath = ResourcePathHelper.getClassificationPathFromPast(classificationId, daysInPast);
+		// This is to avoid loading a large number of classifications from the store.
+		for (int i = 0; i < 5; i++) {
+			String path = ResourcePathHelper.getClassificationPathFromPast(classificationId, i);
 			try {
-				InputStream inputStream = classificationJobResourceManager.readResourceStreamOrNullIfNotExists(classificationPath);
-				if (inputStream != null) {
-					try {
-						return objectMapper.readValue(inputStream, Classification.class);
-					} finally {
-						inputStream.close();
-					}
-				}
+				InputStream inputStream = classificationJobResourceManager.readResourceStream(path);
+				return objectMapper.readValue(inputStream, Classification.class);
+			} catch (FileNotFoundException e) {
+				// Try the next day
 			} catch (IOException e) {
-				logger.error("Failed to load classification from store.", e);
+				logger.error("Failed to load classification {} from {}", classificationId, path, e);
 			}
 		}
-		throw new FileNotFoundException("Classification with ID " + classificationId + " not found.");
+		throw new FileNotFoundException("Classification " + classificationId + " not found.");
 	}
 
 	public InputStream getClassificationResults(Classification classification) throws IOException {
