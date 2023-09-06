@@ -1,7 +1,8 @@
 package org.snomed.otf.reasoner.server.rest;
 
 import com.google.common.base.Strings;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
@@ -20,14 +21,15 @@ import static org.snomed.otf.owltoolkit.service.SnomedReasonerService.ELK_REASON
 
 @RestController()
 @RequestMapping(value = "/classifications", produces = "application/json")
+@Tag(name = "Classifications")
 public class ClassificationController {
 
 	@Autowired
 	private ClassificationJobManager classificationJobManager;
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
-	@ApiOperation(value = "Create and run a classification job.",
-			notes = "The dependencyPackage is only required for classifying extensions."
+	@Operation(summary = "Create and run a classification job.",
+			description = "The dependencyPackage is only required for classifying extensions."
 			+ " The value should be the international release package that the extension is based on." +
 					"Include a responseMessageQueue if you want to receive job status updates via JMS. " +
 					"The branch parameter is deprecated and will be removed in a future release.")
@@ -54,7 +56,7 @@ public class ClassificationController {
 	}
 
 	@RequestMapping(path = "/{classificationId}", method = RequestMethod.GET)
-	@ApiOperation("Check the status of an existing classification.")
+	@Operation(summary = "Check the status of an existing classification.")
 	public Classification getClassification(@PathVariable String classificationId) throws FileNotFoundException {
 		Classification classification = classificationJobManager.getClassification(classificationId);
 		if (classification == null) {
@@ -64,7 +66,7 @@ public class ClassificationController {
 	}
 
 	@RequestMapping(path = "/{classificationId}/results/rf2", method = RequestMethod.GET, produces="application/zip")
-	@ApiOperation("Download the results of a completed classification.")
+	@Operation(summary = "Download the results of a completed classification.")
 	public void getClassificationResultsRf2(@PathVariable String classificationId, HttpServletResponse response) throws IOException {
 		Classification classification = classificationJobManager.getClassification(classificationId);
 		if (classification == null) {

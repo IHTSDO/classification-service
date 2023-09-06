@@ -1,7 +1,7 @@
 package org.snomed.otf.reasoner.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.otf.reasoner.server.pojo.BuildVersion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Api(tags = "Version", description = "Build Version")
+@Tag(name = "Version", description = "Build Version")
 public class VersionController {
 
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
 
-	@ApiOperation("Software build version and build timestamp.")
+	@Operation(summary = "Software build version and build timestamp.")
 	@RequestMapping(value = "/version", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public BuildVersion getBuildInformation() {

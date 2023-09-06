@@ -13,7 +13,7 @@ public class RootController {
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	public void getRoot(HttpServletResponse response) throws IOException {
 		// Redirect to Swagger REST API Documentation
-		response.sendRedirect("swagger-ui/");
+		response.sendRedirect("swagger-ui/index.html");
 	}
 
 }
