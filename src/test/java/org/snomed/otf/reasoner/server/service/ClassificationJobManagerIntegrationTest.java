@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,6 +31,7 @@ import static org.springframework.test.util.AssertionErrors.assertEquals;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {TestConfiguration.class})
 @ActiveProfiles("test")
+@Testcontainers
 public class ClassificationJobManagerIntegrationTest {
 
 	@Autowired
@@ -119,5 +121,4 @@ public class ClassificationJobManagerIntegrationTest {
 		assertEquals("Classification ID's equal", classification.getClassificationId(), classificationStatus.getId());
 		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
 	}
-
 }

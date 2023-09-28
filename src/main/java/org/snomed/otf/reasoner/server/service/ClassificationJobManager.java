@@ -1,9 +1,9 @@
 package org.snomed.otf.reasoner.server.service;
 
-import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
@@ -23,10 +23,11 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.TextMessage;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.TextMessage;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
@@ -105,7 +106,7 @@ public class ClassificationJobManager {
 			String classificationString = objectMapper.writeValueAsString(classification);
 			classificationJobResourceManager.writeResource(
 					ResourcePathHelper.getClassificationPathFromToday(classification.getClassificationId()),
-					new StringInputStream(classificationString));
+					IOUtils.toInputStream(classificationString, StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			logger.error("Failed to save classification {}", classification.getClassificationId(), e);
 		}

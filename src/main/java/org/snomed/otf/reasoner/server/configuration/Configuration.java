@@ -4,7 +4,6 @@ import org.ihtsdo.otf.jms.MessagingHelper;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.aws.autoconfigure.context.ContextInstanceDataAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
@@ -14,10 +13,7 @@ import org.springframework.jms.support.converter.MessageType;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@SpringBootApplication(
-		exclude = {
-				ContextInstanceDataAutoConfiguration.class
-		})
+@SpringBootApplication
 @EnableJms
 public abstract class Configuration {
 
