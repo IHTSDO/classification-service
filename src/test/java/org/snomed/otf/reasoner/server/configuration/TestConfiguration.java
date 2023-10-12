@@ -22,9 +22,6 @@ public class TestConfiguration extends org.snomed.otf.reasoner.server.configurat
 	private final static Logger LOGGER = LoggerFactory.getLogger(TestConfiguration.class);
 	private static final String ACTIVEMQ_IMAGE = "rmohr/activemq";
 	private static final int ACTIVEMQ_PORT = 61616;
-	private static final String TCP_FORMAT = "tcp://%s:%d";
-	private static final String BROKER_URL_FORMAT = "activemq.broker-url=%s";
-	private static final int TIMEOUT_WAITING_FOR_MESSAGES = 15;
 
 	@SuppressWarnings("rawtypes")
 	@Container
