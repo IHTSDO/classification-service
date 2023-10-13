@@ -20,7 +20,7 @@ public class TestConfiguration extends org.snomed.otf.reasoner.server.configurat
 
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(TestConfiguration.class);
-	private static final String ACTIVEMQ_IMAGE = "rmohr/activemq";
+	private static final String ACTIVEMQ_IMAGE = "symptoma/activemq";
 	private static final int ACTIVEMQ_PORT = 61616;
 
 	@SuppressWarnings("rawtypes")
