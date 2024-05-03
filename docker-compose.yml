@@ -1,0 +1,9 @@
+version: '2.1'
+services:
+  classification-service:
+    image: snomedinternational/classification-service:latest
+    container_name: classification-service
+    restart: always
+    entrypoint: java -Xms2g -Xmx4g --add-opens java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED -cp @/app/jib-classpath-file org.snomed.otf.reasoner.server.Application
+    ports:
+      - 8089:8089
