@@ -1,0 +1,254 @@
+repo_name: IHTSDO/classification-service
+report_id: 8ef6919e69318f762f5f84117535c525
+version: 0.1
+repo_type: Public
+timestamp: '2024-03-21T12:56:48+00:00'
+requested_by: dmcgihtsdo
+provider: github
+branch: master
+detected_tools_count: 20
+tools:
+- name: Java
+  description: A concurrent, class-based, object-oriented, language specifically designed
+    to have as few implementation dependencies as possible
+  website_url: https://www.java.com
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/995/K85ZWV2F.png
+  detection_source_url: https://github.com/IHTSDO/classification-service
+  detection_source: Repo Metadata
+- name: Spring Framework
+  description: An application framework and inversion of control container for the
+    Java platform
+  website_url: https://spring.io/projects/spring-framework
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Frameworks (Full Stack)
+  image_url: https://img.stackshare.io/service/2006/spring-framework-project-logo.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
+- name: ActiveMQ
+  description: A message broker written in Java together with a full JMS client
+  website_url: http://activemq.apache.org/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Data Stores
+  sub_category: Message Queue
+  image_url: https://img.stackshare.io/service/1062/default_08edb6f82e2c79424efc1e297ab096e50acd8e0b.jpg
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/IHTSDO/classification-service
+  detection_source: Repo Metadata
+- name: Log4j
+  description: A Java-based logging utility
+  website_url: https://logging.apache.org/log4j/2.x/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Monitoring
+  sub_category: Logging Tools
+  image_url: https://img.stackshare.io/service/2804/Coralogix-log4j-integration.jpg
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: Jim Cornmell
+  last_updated_on: 2023-03-15 11:52:19.000000000 Z
+- name: Logback
+  description: A logging framework for Java applications
+  website_url: https://logback.qos.ch/
+  open_source: false
+  hosted_saas: false
+  category: Monitoring
+  sub_category: Log Management
+  image_url: https://img.stackshare.io/service/2923/05518ecaa42841e834421e9d6987b04f_400x400.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/src/main/resources/logback.xml
+  detection_source: src/main/resources/logback.xml
+  last_updated_by: Darryn McGaw
+  last_updated_on: 2023-06-06 16:18:34.000000000 Z
+- name: Travis CI
+  description: A hosted continuous integration service for open source and private
+    projects
+  website_url: http://travis-ci.com/
+  open_source: false
+  hosted_saas: true
+  category: Build, Test, Deploy
+  sub_category: Continuous Integration
+  image_url: https://img.stackshare.io/service/460/Lu6cGu0z_400x400.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/.travis.yml
+  detection_source: ".travis.yml"
+  last_updated_by: Kai Kewley
+  last_updated_on: 2018-04-27 10:33:43.000000000 Z
+- name: Apache Camel
+  description: A versatile open source integration framework
+  website_url: https://camel.apache.org/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Application Hosting
+  sub_category: Platform as a Service
+  image_url: https://img.stackshare.io/service/3276/xWt1RFo6_400x400.jpg
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/src/main/resources/application.properties
+  detection_source: src/main/resources/application.properties
+  last_updated_by: Kai Kewley
+  last_updated_on: 2017-07-31 14:04:09.000000000 Z
+- name: Shell
+  description: A shell is a text-based terminal, used for manipulating programs and
+    files. Shell scripts typically manage program execution.
+  website_url: https://en.wikipedia.org/wiki/Shell_script
+  open_source: false
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/4631/default_c2062d40130562bdc836c13dbca02d318205a962.png
+  detection_source_url: https://github.com/IHTSDO/classification-service
+  detection_source: Repo Metadata
+- name: javax.xml.bind:jaxb-api
+  description: JAXB
+  license: CDDL-1.1,CNRI-Python-GPL-Compatible
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-08-18 14:13:09.000000000 Z
+- name: org.apache.activemq:activemq-broker
+  description: The ActiveMQ Message Broker implementation
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: org.apache.logging.log4j:log4j-1.2-api
+  description: The Apache Log4j 1.x Compatibility API
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: org.apache.logging.log4j:log4j-api
+  description: The Apache Log4j API
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: org.apache.logging.log4j:log4j-core
+  description: The Apache Log4j Implementation
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: org.apache.logging.log4j:log4j-to-slf4j
+  description: Binding between LOG4J 2 API and SLF4J
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-12 11:00:24.000000000 Z
+- name: org.springframework.boot:spring-boot-starter
+  description: Core starter
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
+- name: org.springframework.boot:spring-boot-starter-security
+  description: Starter for using Spring Security
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
+- name: org.springframework.boot:spring-boot-starter-test
+  description: Starter for testing Spring Boot applications with libraries including
+    JUnit
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
+- name: org.springframework.boot:spring-boot-starter-web
+  description: Starter for building web, including RESTful, applications using Spring
+    MVC
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
+- name: org.springframework:spring-jms
+  description: Spring JMS
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/IHTSDO/classification-service/blob/master/pom.xml
+  detection_source: pom.xml
+  last_updated_by: CoderMChu
+  last_updated_on: 2023-10-20 09:01:37.000000000 Z
