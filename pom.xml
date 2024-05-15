@@ -10,6 +10,7 @@
         <version>3.4.0</version>
     </parent>
 
+    <name>classification-service</name>
     <groupId>org.snomed.otf</groupId>
     <artifactId>classification-service</artifactId>
     <version>9.2.0</version>
