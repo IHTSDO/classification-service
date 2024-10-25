@@ -13,7 +13,7 @@
     <name>classification-service</name>
     <groupId>org.snomed.otf</groupId>
     <artifactId>classification-service</artifactId>
-    <version>9.3.0</version>
+    <version>9.3.1</version>
     <properties>
         <packageName>${project.artifactId}</packageName>
         <execFinalName>${project.build.finalName}.jar</execFinalName>
