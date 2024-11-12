@@ -29,18 +29,6 @@
         <dependency>
             <groupId>org.snomed.otf</groupId>
             <artifactId>snomed-owl-toolkit</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.snomed.otf</groupId>
-                    <artifactId>snomed-boot</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.snomed.otf</groupId>
-            <artifactId>snomed-boot</artifactId>
-            <version>5.0.0</version>
         </dependency>
 
         <!-- Snomed International common -->
