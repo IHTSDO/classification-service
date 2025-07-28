@@ -10,12 +10,12 @@ CS integrates with **ActiveMQ**, **AWS S3 / local file-system storage**, **Consu
 
 ```mermaid
 flowchart TD
-    Client["Web UI / CI pipelines"] --> CS
-    CS -->|REST| Reasoner[(OWL Toolkit \n  (ELK))]
-    CS -->|JMS| ActiveMQ[(ActiveMQ Broker)]
-    CS -->|S3 SDK / FS| Storage[(Release & Job Store)]
-    CS -->|Config| Consul[(Consul)]
-    CS -->|Secrets| Vault[(Vault)]
+    Client["Web UI / CI pipelines"] --> CS["Classification Service"]
+    CS -->|REST| Reasoner["OWL Toolkit<br/>(ELK)"]
+    CS -->|JMS| ActiveMQ["ActiveMQ Broker"]
+    CS -->|S3 SDK / FS| Storage["Release & Job Store"]
+    CS -->|Config| Consul["Consul"]
+    CS -->|Secrets| Vault["Vault"]
 ```
 
 <br/>
@@ -25,10 +25,10 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant User
-    participant CS
-    participant Storage as Store
+    participant CS as Classification Service
+    participant Store as Storage
     participant ActiveMQ
-    participant Reasoner as Reasoner(OWL Toolkit)
+    participant Reasoner as OWL Toolkit
     User->>CS: POST /classifications (multipart RF2 delta)
     CS->>Store: Persist delta & metadata
     CS--)ActiveMQ: Enqueue classification-job
