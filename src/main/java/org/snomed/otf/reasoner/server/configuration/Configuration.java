@@ -1,10 +1,15 @@
 package org.snomed.otf.reasoner.server.configuration;
 
 import org.ihtsdo.otf.jms.MessagingHelper;
+import org.ihtsdo.otf.resourcemanager.ResourceManager;
+import org.snomed.module.storage.ModuleStorageCoordinator;
+import org.snomed.module.storage.RF2Service;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
@@ -47,4 +52,26 @@ public abstract class Configuration {
 		return Executors.newCachedThreadPool();
 	}
 
+	@Bean
+	public ModuleStorageCoordinator moduleStorageCoordinator(@Value("${environment}") String environment, @Autowired ResourceManager resourceManager) {
+		if (environment == null) {
+			return null;
+		}
+
+		return switch (environment.split("-")[0]) {
+			case "prod" -> ModuleStorageCoordinator.initProd(resourceManager);
+			case "uat" -> ModuleStorageCoordinator.initUat(resourceManager);
+			default -> ModuleStorageCoordinator.initDev(resourceManager);
+		};
+	}
+
+	@Bean
+	public ResourceManager resourceManager(@Autowired ModuleStorageResourceConfig resourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
+		return new ResourceManager(resourceConfiguration, cloudResourceLoader);
+	}
+
+	@Bean
+	public RF2Service rf2Service() {
+		return new RF2Service();
+	}
 }
