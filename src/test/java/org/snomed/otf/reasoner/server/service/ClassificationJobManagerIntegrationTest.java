@@ -1,47 +1,30 @@
 package org.snomed.otf.reasoner.server.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.snomed.module.storage.ModuleMetadata;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.reasoner.server.configuration.TestConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.pojo.ClassificationStatusAndMessage;
 import org.snomed.otf.snomedboot.testutil.ZipUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.io.*;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.snomed.otf.reasoner.server.pojo.ClassificationStatus.*;
 import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {TestConfiguration.class})
-@ActiveProfiles("test")
-@Testcontainers
-public class ClassificationJobManagerIntegrationTest {
-
-	@Autowired
-	private ClassificationJobManager classificationJobManager;
-
-	@Autowired
-	private ObjectMapper objectMapper;
-
+class ClassificationJobManagerIntegrationTest extends TestConfiguration {
 	private String baseReleasePath;
 	private File newContentDeltaArchive;
+	private File baseSnapshot;
 
 	@BeforeEach
 	public void setup() throws IOException {
@@ -54,17 +37,19 @@ public class ClassificationJobManagerIntegrationTest {
 
 		// Copy base into releases directory
 		this.baseReleasePath = "base-snapshot.zip";
-		File baseSnapshot = new File("store/releases/" + this.baseReleasePath);
-		FileUtils.copyFile(previousReleaseSnapshotArchive, baseSnapshot);
-		baseSnapshot.deleteOnExit();
+		this.baseSnapshot = new File("store/releases/" + this.baseReleasePath);
+		FileUtils.copyFile(previousReleaseSnapshotArchive, this.baseSnapshot);
+		this.baseSnapshot.deleteOnExit();
 
 		// Zip new content
-		newContentDeltaArchive = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines(deltaRF2Path);
-		newContentDeltaArchive.deleteOnExit();
+		this.newContentDeltaArchive = ZipUtil.zipDirectoryRemovingCommentsAndBlankLines(deltaRF2Path);
+		this.newContentDeltaArchive.deleteOnExit();
 	}
 
 	@Test
 	public void queueClassification() throws Exception {
+		givenDependency("20170131");
+
 		Classification classification = classificationJobManager.queueClassification(
 				baseReleasePath,
 				null,
@@ -96,6 +81,7 @@ public class ClassificationJobManagerIntegrationTest {
 
 	@Test
 	public void queueClassificationReadStatusViaJMS() throws Exception {
+		givenDependency("20170131");
 
 		String responseMessageQueue = "test.job.status.queue";
 
@@ -120,5 +106,16 @@ public class ClassificationJobManagerIntegrationTest {
 
 		assertEquals("Classification ID's equal", classification.getClassificationId(), classificationStatus.getId());
 		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
+	}
+
+	private void givenDependency(String effectiveTime) {
+		ModuleMetadata moduleMetadata = new ModuleMetadata();
+		moduleMetadata.setCodeSystemShortName("TEST");
+		moduleMetadata.setIdentifyingModuleId("900000000000207008");
+		moduleMetadata.setEffectiveTime(Integer.valueOf(effectiveTime));
+		moduleMetadata.setFilename("SnomedCT_MiniRF2_Base_snapshot");
+		moduleMetadata.setFile(this.baseSnapshot);
+
+		when(moduleStorageCoordinator.getDependencies(any(), eq(true))).thenReturn(Set.of(moduleMetadata));
 	}
 }

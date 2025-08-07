@@ -6,6 +6,7 @@ import org.snomed.module.storage.ModuleStorageCoordinator;
 import org.snomed.module.storage.RF2Service;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -53,7 +54,7 @@ public abstract class Configuration {
 	}
 
 	@Bean
-	public ModuleStorageCoordinator moduleStorageCoordinator(@Value("${environment}") String environment, @Autowired ResourceManager resourceManager) {
+	public ModuleStorageCoordinator moduleStorageCoordinator(@Value("${environment}") String environment, @Autowired @Qualifier("newReleaseResourceManager") ResourceManager resourceManager) {
 		if (environment == null) {
 			return null;
 		}
@@ -66,8 +67,15 @@ public abstract class Configuration {
 	}
 
 	@Bean
-	public ResourceManager resourceManager(@Autowired ModuleStorageResourceConfig resourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
+	@Qualifier("newReleaseResourceManager")
+	public ResourceManager newResourceManager(@Autowired ModuleStorageResourceConfig resourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
 		return new ResourceManager(resourceConfiguration, cloudResourceLoader);
+	}
+
+	@Bean
+	@Qualifier("legacyReleaseResourceManager")
+	public ResourceManager legacyResourceManager(@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
+		return new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
 	}
 
 	@Bean

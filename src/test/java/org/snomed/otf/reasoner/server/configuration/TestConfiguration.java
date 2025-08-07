@@ -1,29 +1,23 @@
 package org.snomed.otf.reasoner.server.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ihtsdo.otf.jms.MessagingHelper;
+import org.snomed.module.storage.ModuleStorageCoordinator;
+import org.snomed.otf.reasoner.server.Application;
 import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResourceLoader;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Configuration
-public class TestConfiguration extends org.snomed.otf.reasoner.server.configuration.Configuration {
-	@Bean
-	public ClassificationJobManager classificationJobManager(
-			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
-			@Autowired ClassificationJobResourceConfiguration classificationJobResourceConfiguration,
-			@Autowired MessagingHelper messagingHelper,
-			@Autowired ObjectMapper objectMapper) {
+@ActiveProfiles("test")
+@Testcontainers
+@SpringBootTest(classes = {Application.class})
+@PropertySource("classpath:/application-test.properties")
+public abstract class TestConfiguration {
+	@Autowired
+	protected ClassificationJobManager classificationJobManager;
 
-		return new ClassificationJobManager(
-				snomedReleaseResourceConfiguration,
-				classificationJobResourceConfiguration,
-				new FileSystemResourceLoader(),
-				getSnomedReasonerService(),
-				messagingHelper,
-				objectMapper
-		);
-	}
+	@MockBean
+	protected ModuleStorageCoordinator moduleStorageCoordinator;
 }
