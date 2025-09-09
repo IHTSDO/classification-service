@@ -54,12 +54,12 @@ public abstract class Configuration {
 	}
 
 	@Bean
-	public ModuleStorageCoordinator moduleStorageCoordinator(@Value("${environment}") String environment, @Autowired @Qualifier("newReleaseResourceManager") ResourceManager resourceManager) {
+	public ModuleStorageCoordinator moduleStorageCoordinator(@Value("${module.storage.environment.shortname}") String environment, @Autowired @Qualifier("newReleaseResourceManager") ResourceManager resourceManager) {
 		if (environment == null) {
 			return null;
 		}
 
-		return switch (environment.split("-")[0]) {
+		return switch (environment) {
 			case "prod" -> ModuleStorageCoordinator.initProd(resourceManager);
 			case "uat" -> ModuleStorageCoordinator.initUat(resourceManager);
 			default -> ModuleStorageCoordinator.initDev(resourceManager);
