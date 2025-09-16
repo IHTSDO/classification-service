@@ -16,6 +16,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public class DependencyService {
 			return viaGivenParameters(previousPackages);
 		} else {
 			LOGGER.info("Loading dependencies using NEW technique (via given MDRS)");
-			return viaGivenMDRS(deltaArchive);
+			return viaGivenMDRS(previousPackages,deltaArchive);
 		}
 	}
 
@@ -76,23 +77,23 @@ public class DependencyService {
 	}
 
 	// New technique: this is now the preferred way to load dependencies.
-	private InputStreamSet viaGivenMDRS(InputStream deltaArchive) throws FileNotFoundException {
+	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException {
 		Set<RF2Row> mdrs = rf2Service.getMDRS(deltaArchive, true);
 		if (mdrs == null || mdrs.isEmpty()) {
 			LOGGER.error("No MDRS given: cannot compute dependencies.");
 			return null;
 		}
 
-		Set<ModuleMetadata> dependencies = moduleStorageCoordinator.getComposition(mdrs, true);
-		if (dependencies == null || dependencies.isEmpty()) {
+		Set<ModuleMetadata> composition = moduleStorageCoordinator.getComposition(mdrs, true, getUpperBoundary(previousPackages));
+		if (composition == null || composition.isEmpty()) {
 			LOGGER.error("No dependencies found");
 			return null;
 		}
 
-		LOGGER.info("Dependent packages identified as: {}", dependencies.stream().map(ModuleMetadata::getFilename).toList());
+		LOGGER.info("Dependent packages identified as: {}", composition.stream().map(ModuleMetadata::getFilename).toList());
 		Set<InputStream> inputStreams = new HashSet<>();
 		try {
-			for (ModuleMetadata dependency : dependencies) {
+			for (ModuleMetadata dependency : composition) {
 				inputStreams.add(new FileInputStream(dependency.getFile()));
 			}
 			return new InputStreamSet(inputStreams.toArray(new InputStream[]{}));
@@ -119,5 +120,20 @@ public class DependencyService {
 		} catch (Exception e) {
 			LOGGER.error("Failed to close InputStream", e);
 		}
+	}
+
+	private String getUpperBoundary(Set<String> previousPackages) {
+		Set<String> boundary = new HashSet<>();
+		for (String previousPackage : previousPackages) {
+			String[] split = previousPackage.split("_");
+			String effectiveTime = split[split.length - 1].substring(0, 8);
+			boundary.add(effectiveTime);
+		}
+
+		if (boundary.isEmpty()) {
+			return null;
+		}
+
+		return Collections.max(boundary);
 	}
 }
