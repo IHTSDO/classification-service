@@ -16,7 +16,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -84,7 +83,8 @@ public class DependencyService {
 			return null;
 		}
 
-		Set<ModuleMetadata> composition = moduleStorageCoordinator.getComposition(mdrs, true, getUpperBoundary(previousPackages));
+
+		Set<ModuleMetadata> composition = moduleStorageCoordinator.getComposition(mdrs, true, getTransientSourceEffectiveTimes(previousPackages));
 		if (composition == null || composition.isEmpty()) {
 			LOGGER.error("No dependencies found");
 			return null;
@@ -122,18 +122,14 @@ public class DependencyService {
 		}
 	}
 
-	private String getUpperBoundary(Set<String> previousPackages) {
-		Set<String> boundary = new HashSet<>();
+	private Set<String> getTransientSourceEffectiveTimes(Set<String> previousPackages) {
+		Set<String> transientSourceEffectiveTimes = new HashSet<>();
 		for (String previousPackage : previousPackages) {
 			String[] split = previousPackage.split("_");
 			String effectiveTime = split[split.length - 1].substring(0, 8);
-			boundary.add(effectiveTime);
+			transientSourceEffectiveTimes.add(effectiveTime);
 		}
 
-		if (boundary.isEmpty()) {
-			return null;
-		}
-
-		return Collections.max(boundary);
+		return transientSourceEffectiveTimes;
 	}
 }
