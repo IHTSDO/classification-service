@@ -7,13 +7,13 @@
     <parent>
         <groupId>org.snomed</groupId>
         <artifactId>snomed-parent-bom</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.12.1</version>
     </parent>
 
     <name>classification-service</name>
     <groupId>org.snomed.otf</groupId>
     <artifactId>classification-service</artifactId>
-    <version>9.7.1-SNAPSHOT</version>
+    <version>9.7.1</version>
     <properties>
         <packageName>${project.artifactId}</packageName>
         <execFinalName>${project.build.finalName}.jar</execFinalName>
