@@ -6,5 +6,16 @@ echo $*
 
 APP_NAME=[[packageName]]
 
+# Make directories/permissions required
+# (means the AIM doesn't need to change for software updates)
+APP_DIR=/opt/$APP_NAME
+DIRECTORIES="cache"
+
+for DIRECTORY in $DIRECTORIES; do
+   sudo mkdir -p $APP_DIR/$DIRECTORY
+   sudo chown $APP_NAME.$APP_NAME $APP_DIR/$DIRECTORY
+   sudo chmod 755 $APP_DIR/$DIRECTORY
+done
+
 supervisorctl update $APP_NAME || true
 supervisorctl start $APP_NAME || true
