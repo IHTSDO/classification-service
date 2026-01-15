@@ -3,10 +3,7 @@ package org.snomed.otf.reasoner.server.service;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.module.storage.ModuleMetadata;
-import org.snomed.module.storage.ModuleStorageCoordinator;
-import org.snomed.module.storage.RF2Row;
-import org.snomed.module.storage.RF2Service;
+import org.snomed.module.storage.*;
 import org.snomed.otf.owltoolkit.util.InputStreamSet;
 import org.snomed.otf.reasoner.server.configuration.ApplicationProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,8 +13,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class DependencyService {
@@ -43,7 +39,7 @@ public class DependencyService {
 	 * @return An InputStream collection storing given Delta's dependencies.
 	 * @throws IOException When an error occurs processing the InputStream collection.
 	 */
-	public InputStreamSet getInputStreamSet(Set<String> previousPackages, InputStream deltaArchive) throws IOException {
+	public InputStreamSet getInputStreamSet(Set<String> previousPackages, InputStream deltaArchive) throws IOException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
 		if (applicationProperties.isLegacyDependencyManagement()) {
 			LOGGER.info("Loading dependencies using LEGACY technique (via given parameters)");
 			close(deltaArchive);
@@ -76,7 +72,7 @@ public class DependencyService {
 	}
 
 	// New technique: this is now the preferred way to load dependencies.
-	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException {
+	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
 		Set<RF2Row> mdrs = rf2Service.getMDRS(deltaArchive, true);
 		if (mdrs == null || mdrs.isEmpty()) {
 			LOGGER.error("No MDRS given: cannot compute dependencies.");
@@ -122,13 +118,15 @@ public class DependencyService {
 		}
 	}
 
-	private Set<String> getTransientSourceEffectiveTimes(Set<String> previousPackages) {
+	private Set<String> getTransientSourceEffectiveTimes(Set<String> previousPackages) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        Map<String, List<ModuleMetadata>> releasesToCodeSystemMap = moduleStorageCoordinator.getAllReleases();
+        List<ModuleMetadata> allReleases = new ArrayList<>();
+		releasesToCodeSystemMap.values().forEach(allReleases::addAll);
+
 		Set<String> transientSourceEffectiveTimes = new HashSet<>();
 		for (String previousPackage : previousPackages) {
-			String[] split = previousPackage.split("_");
-			String effectiveTime = split[split.length - 1].substring(0, 8);
-			transientSourceEffectiveTimes.add(effectiveTime);
-		}
+            allReleases.stream().filter(item -> item.getFilename().equals(previousPackage)).findFirst().ifPresent(foundModuleMetadata -> transientSourceEffectiveTimes.add(foundModuleMetadata.getEffectiveTimeString()));
+        }
 
 		return transientSourceEffectiveTimes;
 	}
