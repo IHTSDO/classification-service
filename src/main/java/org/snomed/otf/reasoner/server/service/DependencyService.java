@@ -39,7 +39,7 @@ public class DependencyService {
 	 * @return An InputStream collection storing given Delta's dependencies.
 	 * @throws IOException When an error occurs processing the InputStream collection.
 	 */
-	public InputStreamSet getInputStreamSet(Set<String> previousPackages, InputStream deltaArchive) throws IOException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+	public InputStreamSet getInputStreamSet(Set<String> previousPackages, InputStream deltaArchive) throws IOException {
 		if (applicationProperties.isLegacyDependencyManagement()) {
 			LOGGER.info("Loading dependencies using LEGACY technique (via given parameters)");
 			close(deltaArchive);
@@ -72,7 +72,7 @@ public class DependencyService {
 	}
 
 	// New technique: this is now the preferred way to load dependencies.
-	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException {
 		Set<RF2Row> mdrs = rf2Service.getMDRS(deltaArchive, true);
 		if (mdrs == null || mdrs.isEmpty()) {
 			LOGGER.error("No MDRS given: cannot compute dependencies.");
@@ -80,16 +80,16 @@ public class DependencyService {
 		}
 
 
-		Set<ModuleMetadata> composition = moduleStorageCoordinator.getComposition(mdrs, true, getTransientSourceEffectiveTimes(previousPackages));
-		if (composition == null || composition.isEmpty()) {
+		Set<ModuleMetadata> moduleMetadata = moduleStorageCoordinator.getDependenciesAndPreviousVersion(mdrs, true, getTransientSourceEffectiveTimes(previousPackages));
+		if (moduleMetadata == null || moduleMetadata.isEmpty()) {
 			LOGGER.error("No dependencies found");
 			return null;
 		}
 
-		LOGGER.info("Dependent packages identified as: {}", composition.stream().map(ModuleMetadata::getFilename).toList());
+		LOGGER.info("Dependent packages identified as: {}", moduleMetadata.stream().map(ModuleMetadata::getFilename).toList());
 		Set<InputStream> inputStreams = new HashSet<>();
 		try {
-			for (ModuleMetadata dependency : composition) {
+			for (ModuleMetadata dependency : moduleMetadata) {
 				inputStreams.add(new FileInputStream(dependency.getFile()));
 			}
 			return new InputStreamSet(inputStreams.toArray(new InputStream[]{}));
@@ -118,15 +118,13 @@ public class DependencyService {
 		}
 	}
 
-	private Set<String> getTransientSourceEffectiveTimes(Set<String> previousPackages) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
-        Map<String, List<ModuleMetadata>> releasesToCodeSystemMap = moduleStorageCoordinator.getAllReleases();
-        List<ModuleMetadata> allReleases = new ArrayList<>();
-		releasesToCodeSystemMap.values().forEach(allReleases::addAll);
-
+	private Set<String> getTransientSourceEffectiveTimes(Set<String> previousPackages) {
 		Set<String> transientSourceEffectiveTimes = new HashSet<>();
 		for (String previousPackage : previousPackages) {
-            allReleases.stream().filter(item -> item.getFilename().equals(previousPackage)).findFirst().ifPresent(foundModuleMetadata -> transientSourceEffectiveTimes.add(foundModuleMetadata.getEffectiveTimeString()));
-        }
+			String[] split = previousPackage.split("_");
+			String effectiveTime = split[split.length - 1].substring(0, 8);
+			transientSourceEffectiveTimes.add(effectiveTime);
+		}
 
 		return transientSourceEffectiveTimes;
 	}
