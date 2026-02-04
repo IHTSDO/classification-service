@@ -116,6 +116,6 @@ class ClassificationJobManagerIntegrationTest extends TestConfiguration {
 		moduleMetadata.setFilename("SnomedCT_MiniRF2_Base_snapshot");
 		moduleMetadata.setFile(this.baseSnapshot);
 
-		when(moduleStorageCoordinator.getDependencies(any(), eq(true))).thenReturn(Set.of(moduleMetadata));
+		when(moduleStorageCoordinator.getDependencies(any(), any(), eq(true))).thenReturn(Set.of(moduleMetadata));
 	}
 }

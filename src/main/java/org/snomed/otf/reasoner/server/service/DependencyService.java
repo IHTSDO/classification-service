@@ -3,10 +3,7 @@ package org.snomed.otf.reasoner.server.service;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.module.storage.ModuleMetadata;
-import org.snomed.module.storage.ModuleStorageCoordinator;
-import org.snomed.module.storage.RF2Row;
-import org.snomed.module.storage.RF2Service;
+import org.snomed.module.storage.*;
 import org.snomed.otf.owltoolkit.util.InputStreamSet;
 import org.snomed.otf.reasoner.server.configuration.ApplicationProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,8 +13,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class DependencyService {
@@ -84,16 +80,16 @@ public class DependencyService {
 		}
 
 
-		Set<ModuleMetadata> composition = moduleStorageCoordinator.getComposition(mdrs, true, getTransientSourceEffectiveTimes(previousPackages));
-		if (composition == null || composition.isEmpty()) {
+		Set<ModuleMetadata> moduleMetadata = moduleStorageCoordinator.getDependenciesAndPreviousVersion(mdrs, true, getTransientSourceEffectiveTimes(previousPackages));
+		if (moduleMetadata == null || moduleMetadata.isEmpty()) {
 			LOGGER.error("No dependencies found");
 			return null;
 		}
 
-		LOGGER.info("Dependent packages identified as: {}", composition.stream().map(ModuleMetadata::getFilename).toList());
+		LOGGER.info("Dependent packages identified as: {}", moduleMetadata.stream().map(ModuleMetadata::getFilename).toList());
 		Set<InputStream> inputStreams = new HashSet<>();
 		try {
-			for (ModuleMetadata dependency : composition) {
+			for (ModuleMetadata dependency : moduleMetadata) {
 				inputStreams.add(new FileInputStream(dependency.getFile()));
 			}
 			return new InputStreamSet(inputStreams.toArray(new InputStream[]{}));
