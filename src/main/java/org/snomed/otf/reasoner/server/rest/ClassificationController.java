@@ -4,9 +4,11 @@ import com.google.common.base.Strings;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snomed.otf.reasoner.server.configuration.ApplicationProperties;
 import org.snomed.otf.reasoner.server.pojo.Classification;
 import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,9 +25,15 @@ import static org.snomed.otf.owltoolkit.service.SnomedReasonerService.ELK_REASON
 @RequestMapping(value = "/classifications", produces = "application/json")
 @Tag(name = "Classifications")
 public class ClassificationController {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClassificationController.class);
 
-	@Autowired
-	private ClassificationJobManager classificationJobManager;
+	private final ClassificationJobManager classificationJobManager;
+	private final ApplicationProperties applicationProperties;
+
+	public ClassificationController(ClassificationJobManager classificationJobManager, ApplicationProperties applicationProperties) {
+		this.classificationJobManager = classificationJobManager;
+		this.applicationProperties = applicationProperties;
+	}
 
 	@RequestMapping(method = RequestMethod.POST, consumes = "multipart/form-data")
 	@Operation(summary = "Create and run a classification job.",
@@ -41,9 +49,8 @@ public class ClassificationController {
 			@RequestParam(defaultValue = ELK_REASONER_FACTORY) String reasonerId,
 			UriComponentsBuilder uriComponentsBuilder) {
 
-		if (Strings.isNullOrEmpty(previousPackage) && Strings.isNullOrEmpty(dependencyPackage)) {
-			throw new IllegalArgumentException("Either the previousPackage or dependencyPackage parameter must be given.");
-		}
+		throwIfIllegalArguments(previousPackage, dependencyPackage);
+
 		Classification classification;
 		try {
 			classification = classificationJobManager.queueClassification(previousPackage, dependencyPackage, rf2Delta.getInputStream(), reasonerId, responseMessageQueue, branch);
@@ -79,4 +86,15 @@ public class ClassificationController {
 		}
 	}
 
+	private void throwIfIllegalArguments(String previousPackage, String dependencyPackage) {
+		boolean legacyDependencyManagement = applicationProperties.isLegacyDependencyManagement();
+		if (!legacyDependencyManagement) {
+			LOGGER.trace("Skipping parameter check as using NEW technique (via given MDRS)");
+			return;
+		}
+
+		if (Strings.isNullOrEmpty(previousPackage) && Strings.isNullOrEmpty(dependencyPackage)) {
+			throw new IllegalArgumentException("Either the previousPackage or dependencyPackage parameter must be given.");
+		}
+	}
 }
