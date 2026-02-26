@@ -122,6 +122,12 @@ public class DependencyService {
 		Set<String> transientSourceEffectiveTimes = new HashSet<>();
 		for (String previousPackage : previousPackages) {
 			String[] split = previousPackage.split("_");
+			boolean unknownFormat = split.length == 1;
+			if (unknownFormat) {
+				LOGGER.trace("Failed to parse effective time from package {}", previousPackage);
+				continue;
+			}
+
 			String effectiveTime = split[split.length - 1].substring(0, 8);
 			transientSourceEffectiveTimes.add(effectiveTime);
 		}
