@@ -15,13 +15,15 @@
     <artifactId>classification-service</artifactId>
     <version>9.10.0-SNAPSHOT</version>
     <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
         <packageName>${project.artifactId}</packageName>
         <execFinalName>${project.build.finalName}.jar</execFinalName>
         <docker.registry>docker.io</docker.registry>
         <docker.allowInsecureRegistries>false</docker.allowInsecureRegistries>
         <docker.image.prefix>snomedinternational</docker.image.prefix>
         <docker.image.tag>latest</docker.image.tag>
-        <docker.base-image>amazoncorretto:17</docker.base-image>
+        <docker.base-image>amazoncorretto:25</docker.base-image>
     </properties>
 
     <dependencies>
