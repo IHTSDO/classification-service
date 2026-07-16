@@ -46,7 +46,11 @@ public class DependencyService {
 			return viaGivenParameters(previousPackages);
 		} else {
 			LOGGER.info("Loading dependencies using NEW technique (via given MDRS)");
-			return viaGivenMDRS(previousPackages,deltaArchive);
+			try {
+				return viaGivenMDRS(previousPackages, deltaArchive);
+			} catch (ModuleStorageCoordinatorException e) {
+				throw new IOException("Failed to load dependencies using NEW technique (via given MDRS)", e);
+			}
 		}
 	}
 
@@ -72,7 +76,7 @@ public class DependencyService {
 	}
 
 	// New technique: this is now the preferred way to load dependencies.
-	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException {
+	private InputStreamSet viaGivenMDRS(Set<String> previousPackages, InputStream deltaArchive) throws FileNotFoundException, ModuleStorageCoordinatorException {
 		Set<RF2Row> mdrs = rf2Service.getMDRS(deltaArchive, true);
 		if (mdrs == null || mdrs.isEmpty()) {
 			LOGGER.error("No MDRS given: cannot compute dependencies.");

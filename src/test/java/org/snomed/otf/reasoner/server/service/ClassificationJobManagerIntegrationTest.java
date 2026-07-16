@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.module.storage.ModuleMetadata;
+import org.snomed.module.storage.ModuleStorageCoordinatorException;
 import org.snomed.otf.owltoolkit.service.SnomedReasonerService;
 import org.snomed.otf.reasoner.server.configuration.TestConfiguration;
 import org.snomed.otf.reasoner.server.pojo.Classification;
@@ -108,7 +109,7 @@ class ClassificationJobManagerIntegrationTest extends TestConfiguration {
 		assertEquals("Classification status is COMPLETED", COMPLETED, classificationStatus.getStatus());
 	}
 
-	private void givenDependency(String effectiveTime) {
+	private void givenDependency(String effectiveTime) throws ModuleStorageCoordinatorException {
 		ModuleMetadata moduleMetadata = new ModuleMetadata();
 		moduleMetadata.setCodeSystemShortName("TEST");
 		moduleMetadata.setIdentifyingModuleId("900000000000207008");
