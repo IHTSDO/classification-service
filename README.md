@@ -82,7 +82,7 @@ Package conventions:
 
 ### 4.1  Prerequisites
 
-1. **JDK 17**
+1. **JDK 25**
 2. **Maven 3.8+** (wrapper provided)
 3. **ActiveMQ 5.x** – an embedded broker is started by default, but an external one is recommended for multi-instance testing.
 4. (Optional) **AWS S3**, **Consul** & **Vault** if you want to mirror production setups.
