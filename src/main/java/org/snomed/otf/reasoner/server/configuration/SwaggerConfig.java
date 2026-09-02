@@ -30,9 +30,11 @@ public class SwaggerConfig {
 
     @Bean
     public GroupedOpenApi springActuatorApi() {
+        // Spring Boot 4 spread the actuator endpoints across per-module packages
+        // (e.g. org.springframework.boot.health.actuate.endpoint.HealthEndpoint), so
+        // scanning org.springframework.boot.actuate alone leaves this group empty.
         return GroupedOpenApi.builder()
                 .group("actuator")
-                .packagesToScan("org.springframework.boot.actuate")
                 .pathsToMatch("/actuator/**")
                 .build();
     }

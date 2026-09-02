@@ -5,7 +5,7 @@ import org.snomed.otf.reasoner.server.Application;
 import org.snomed.otf.reasoner.server.service.ClassificationJobManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -18,6 +18,6 @@ public abstract class TestConfiguration {
 	@Autowired
 	protected ClassificationJobManager classificationJobManager;
 
-	@MockBean
+	@MockitoBean
 	protected ModuleStorageCoordinator moduleStorageCoordinator;
 }

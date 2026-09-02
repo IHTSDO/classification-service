@@ -1,7 +1,5 @@
 package org.snomed.otf.reasoner.server.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.jms.MessagingHelper;
@@ -20,6 +18,8 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import jakarta.jms.Destination;
 import jakarta.jms.JMSException;
@@ -86,7 +86,7 @@ public class ClassificationJobManager {
 		try {
 			ActiveMQQueue responseDestination = responseMessageQueue == null ? null : new ActiveMQQueue(responseMessageQueue);
 			messagingHelper.send(new ActiveMQQueue(classificationJobQueue), classification, null, responseDestination, messageTimeToLiveSeconds);
-		} catch (JMSException e) {
+		} catch (JacksonException | JMSException e) {
 			throw new IOException("Failed to add classification job to the message queue.", e);
 		}
 
@@ -99,7 +99,7 @@ public class ClassificationJobManager {
 			classificationJobResourceManager.writeResource(
 					ResourcePathHelper.getClassificationPathFromToday(classification.getClassificationId()),
 					IOUtils.toInputStream(classificationString, StandardCharsets.UTF_8));
-		} catch (IOException e) {
+		} catch (IOException | JacksonException e) {
 			LOGGER.error("Failed to save classification {}", classification.getClassificationId(), e);
 		}
 	}
@@ -126,7 +126,7 @@ public class ClassificationJobManager {
 			// Send notification via JMS
 			try {
 				messagingHelper.send(jmsReplyTo, statusAndMessage);
-			} catch (JsonProcessingException | JMSException e) {
+			} catch (JacksonException | JMSException e) {
 				LOGGER.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
 			}
 		});
@@ -216,7 +216,7 @@ public class ClassificationJobManager {
 				return objectMapper.readValue(inputStream, Classification.class);
 			} catch (FileNotFoundException e) {
 				// Try the next day
-			} catch (IOException e) {
+			} catch (IOException | JacksonException e) {
 				LOGGER.error("Failed to load classification {} from {}", classificationId, path, e);
 			}
 		}
