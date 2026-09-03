@@ -25,10 +25,17 @@ import jakarta.jms.Destination;
 import jakarta.jms.JMSException;
 import jakarta.jms.TextMessage;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -105,7 +112,7 @@ public class ClassificationJobManager {
 	}
 
 	@JmsListener(destination = "${classification.jms.job.queue}")
-	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException, IOException {
+	public void consumeClassificationJob(TextMessage classificationMessage) throws JMSException {
 		Classification classification = objectMapper.readValue(classificationMessage.getText(), Classification.class);
 		Destination jmsReplyTo = classificationMessage.getJMSReplyTo();
 		classify(classification, statusAndMessage -> {
@@ -126,8 +133,8 @@ public class ClassificationJobManager {
 			// Send notification via JMS
 			try {
 				messagingHelper.send(jmsReplyTo, statusAndMessage);
-			} catch (JacksonException | JMSException e) {
-				LOGGER.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo);
+			} catch (JacksonException | JMSException exception) {
+				LOGGER.error("Failed to send status update {} to {}", statusAndMessage, jmsReplyTo, exception);
 			}
 		});
 	}
@@ -145,64 +152,54 @@ public class ClassificationJobManager {
 			previousPackages.add(classification.getDependencyPackage());
 		}
 
-		File tempDeltaFile = null;
-		InputStream originalDeltaArchive = null;
-		ByteArrayInputStream toProcessMDRS = null;
-		ByteArrayInputStream toCreateTempFile = null;
+		Path tempDeltaFile = null;
 		try {
 			// Delta
-			originalDeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification));
-			byte[] deltaArchiveBytes = StreamUtils.copyToByteArray(originalDeltaArchive);
-			toProcessMDRS = new ByteArrayInputStream(deltaArchiveBytes);
-			toCreateTempFile = new ByteArrayInputStream(deltaArchiveBytes);
+			byte[] deltaArchiveBytes;
+			try (InputStream originalDeltaArchive = classificationJobResourceManager.readResourceStream(ResourcePathHelper.getInputDeltaPath(classification))) {
+				deltaArchiveBytes = StreamUtils.copyToByteArray(originalDeltaArchive);
+			}
 
 			// Previous Snapshot + dependency
-			InputStreamSet previousReleaseRf2SnapshotArchives = dependencyService.getInputStreamSet(previousPackages, toProcessMDRS);
-			if (previousReleaseRf2SnapshotArchives == null) {
-				throw new ReasonerServiceException("Dependencies not found from MDRS.");
-			}
+			try (InputStream toProcessMDRS = new ByteArrayInputStream(deltaArchiveBytes);
+				 InputStreamSet previousReleaseRf2SnapshotArchives = dependencyService.getInputStreamSet(previousPackages, toProcessMDRS)) {
 
-			tempDeltaFile = Files.createTempFile("classification-delta-" + classification.getClassificationId(), ".zip").toFile();
-			StreamUtils.copy(toCreateTempFile, new FileOutputStream(tempDeltaFile));
+				if (previousReleaseRf2SnapshotArchives == null) {
+					throw new ReasonerServiceException("Dependencies not found from MDRS.");
+				}
 
-			String resultsPath = ResourcePathHelper.getResultsPath(classification);
-			try (OutputStream resultsOutputStream = classificationJobResourceManager.openWritableResourceStream(resultsPath);
-				 InputStream deltaInputStream = new FileInputStream(tempDeltaFile)) {
-				snomedReasonerService.classify(
-						classification.getClassificationId(),
-						previousReleaseRf2SnapshotArchives,
-						deltaInputStream,
-						resultsOutputStream,
-						classification.getReasonerId(),
-						outputOntologyFileForDebug);
+				tempDeltaFile = Files.createTempFile("classification-delta-" + classification.getClassificationId(), ".zip",
+						PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+				try (InputStream toCreateTempFile = new ByteArrayInputStream(deltaArchiveBytes);
+					 OutputStream tempDeltaOutputStream = Files.newOutputStream(tempDeltaFile)) {
+					StreamUtils.copy(toCreateTempFile, tempDeltaOutputStream);
+				}
+
+				String resultsPath = ResourcePathHelper.getResultsPath(classification);
+				try (OutputStream resultsOutputStream = classificationJobResourceManager.openWritableResourceStream(resultsPath);
+					 InputStream deltaInputStream = Files.newInputStream(tempDeltaFile)) {
+					snomedReasonerService.classify(
+							classification.getClassificationId(),
+							previousReleaseRf2SnapshotArchives,
+							deltaInputStream,
+							resultsOutputStream,
+							classification.getReasonerId(),
+							outputOntologyFileForDebug);
+				}
+				statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED, null, classification.getClassificationId()));
+				LOGGER.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 			}
-			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.COMPLETED, null, classification.getClassificationId()));
-			LOGGER.info("Classification complete {}, branch {}. Results written to {}", classification.getClassificationId(), classification.getBranch(), resultsPath);
 		} catch (Exception e) {
 			LOGGER.error("Classification failed {}, branch {}. ", classification.getClassificationId(), classification.getBranch(), e);
 			statusConsumer.accept(new ClassificationStatusAndMessage(ClassificationStatus.FAILED, e.getMessage(), classification.getClassificationId()));
 		} finally {
 			if (tempDeltaFile != null) {
-				if (!tempDeltaFile.delete()) {
-					LOGGER.warn("Failed to delete temp file {}", tempDeltaFile.getAbsolutePath());
+				try {
+					Files.delete(tempDeltaFile);
+				} catch (IOException e) {
+					LOGGER.warn("Failed to delete temp file {}", tempDeltaFile, e);
 				}
 			}
-
-			close(originalDeltaArchive);
-			close(toProcessMDRS);
-			close(toCreateTempFile);
-		}
-	}
-
-	private void close(InputStream inputStream) {
-		if (inputStream == null) {
-			return;
-		}
-
-		try {
-			inputStream.close();
-		} catch (Exception e) {
-			LOGGER.error("Failed to close InputStream", e);
 		}
 	}
 
@@ -215,7 +212,7 @@ public class ClassificationJobManager {
 				InputStream inputStream = classificationJobResourceManager.readResourceStream(path);
 				return objectMapper.readValue(inputStream, Classification.class);
 			} catch (FileNotFoundException e) {
-				// Try the next day
+				LOGGER.debug("Classification {} not found at {}, trying the next day.", classificationId, path, e);
 			} catch (IOException | JacksonException e) {
 				LOGGER.error("Failed to load classification {} from {}", classificationId, path, e);
 			}
